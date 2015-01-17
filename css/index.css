@@ -72,6 +72,7 @@ ul.menu li:hover {
 {
   height: 100%;
   padding: 0;
+  margin: 0;
 }
 
 #library-cell .panel-body
@@ -79,11 +80,12 @@ ul.menu li:hover {
   padding: 5px;
 }
 
-.library-item {
+#library-cell .library-item {
   padding: 3px 3px 3px 8px;
+  color: rgb(42, 159, 214);
 }
 
-.library-item .as-sortable-item-handle {
+#library-cell .library-item .as-sortable-item-handle, #library-cell .library-item .angular-ui-tree-handle {
   position: absolute; 
   height: 100%; 
   width: 5px; 
@@ -106,4 +108,74 @@ ul.menu li:hover {
 .library-item .item-previewing {
   background: rgba(42, 159, 214, 0.5);
   border-radius: 3px;
+}
+
+#cuesheet-cell {
+  overflow: auto;
+}
+
+#cuesheet {
+  width: 100%;
+}
+
+#cuesheet tr, #cuesheet tr td {
+  height: 40px;
+  position: relative;
+}
+
+#cuesheet tr td {
+  box-shadow: inset  0  8px 8px -8px rgba(255,255,255,0.2), 
+              inset  0 -8px 8px -8px rgba(0,0,0,0.5)
+}
+
+#cuesheet th {
+  padding: 0 5px;
+}
+
+#cuesheet col.channel {
+  border-left: 1px solid rgb(50, 50, 50);
+  width: 100px;
+}
+
+#cuesheet col.channel-audio {
+  background: rgba(42, 159, 214, 0.15);
+}
+
+#cuesheet col.channel-html {
+  background: rgba(226, 83, 1, 0.15);
+}
+
+#cuesheet #cuesheet-add-channel {
+  text-align: right;
+}
+
+#cuesheet td.cue-description {
+  padding: 0 5px 0 5px;
+}
+
+#cuesheet .cue-item {
+  height: 100%;
+  width: 100%;
+}
+  
+#cuesheet .cue-handle {
+  width: 5px; 
+  background: rgba(240, 88, 0, 0.5); 
+}
+
+#cuesheet tr.current td.cue-handle {
+  width: 7px;
+  background: rgba(240, 237, 0, 0.7);
+}
+
+#cuesheet form.editable-wrap, #cuesheet .form-group, #cuesheet .form-control {
+  width: 100%;
+}
+
+.cue-item-audio {
+  background: rgba(42, 159, 214, 0.35);
+}
+
+.cue-item-html {
+  background: rgba(226, 83, 1, 0.35);
 }

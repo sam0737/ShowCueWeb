@@ -1,5 +1,5 @@
-angular.module("stageCue").controller("sc.app.library", ['$scope', '$q', 'sc.audio', 'sc.library',
-function ($scope, $q, audio, library) {
+angular.module("stageCue").controller("sc.app.library", ['$scope', '$q', 'sc.audio', 'sc.library', 'sc.cueEngine', 
+function ($scope, $q, audio, library, cueEngine) {
   $scope.rawResources = library.rawResources;
   $scope.items = library.items;
 
@@ -15,8 +15,8 @@ function ($scope, $q, audio, library) {
     audio.stopPreview();
   };
 
-  $scope.remove = function(item) {
-    library.remove(item);
+  $scope.removeAt = function(index) {
+    library.removeAt(index);
   };
 
   $scope.preview = function(item) { 
@@ -30,7 +30,6 @@ function ($scope, $q, audio, library) {
     }); 
   };
   
-  $scope.libraryDragOptions = {};
   $scope.addResource = function(resource)
   {
     $scope.isAddResourceLoading = true;
@@ -38,6 +37,11 @@ function ($scope, $q, audio, library) {
       $scope.isAddResourceLoading = false;
       $scope.isAddResourceVisible = false;
     });
+  };
+  
+  $scope.addToCueSheet = function (item)
+  {
+    cueEngine.addCue(item);
   };
 }]);
 

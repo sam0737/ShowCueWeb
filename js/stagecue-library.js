@@ -1,14 +1,7 @@
 var $q;
-var $fileSystem;
+var $userConfig;
 var $audio;
-
-Array.prototype.scFind = function find(callback, thisArg)
-{
-  for (var i = 0; i < this.length; i++) {
-    if (callback.call(thisArg, this[i])) return this[i];
-  }
-  return undefined;
-}
+var $cueEngine;
 
 function FileResource(fileEntry)
 {
@@ -17,13 +10,22 @@ function FileResource(fileEntry)
 };
 
 function LibraryItem() {
-  this.type = null;
   this.id = Math.floor((1 + Math.random()) * 0x100000000).toString(16).substring(1);
   this.isBuiltin = false;
 }
 
+LibraryItem.prototype.type = null;
 LibraryItem.prototype.persist = function persist() {
   return { type: this.type, name: this.name, id: this.id };
+};
+
+LibraryItem.prototype.thaw = function thaw(v) {
+  this.id = v.id;
+  this.name = v.name;
+};
+
+LibraryItem.thawItems = function thawItems(values) {
+  return StageCue.thawItemsByType(values, [AudioItem]);
 };
 
 function MapToResources(fileEntries)
@@ -36,9 +38,9 @@ function MapToResources(fileEntries)
 };
 
 AudioItem.prototype = new LibraryItem();
+AudioItem.prototype.type = 'audio';
 AudioItem.prototype.constructor = AudioItem;
 function AudioItem() {
-  this.type = 'audio';
   this.previewing = false;
 };
 
@@ -68,19 +70,19 @@ AudioItem.prototype.loadFromResource = function loadFromResource(resource) {
 };
 
 FadeItem.prototype = new LibraryItem();
+FadeItem.prototype.type = 'fade';
 FadeItem.prototype.constructor = FadeItem;
 function FadeItem(resource, callback) {
   this.type = 'fade';
   this.isBuiltin = true;
 };
 
-function Library(audio, q, fileSystem) {
+function Library(audio, q, userConfig, cueEngine) {
   this.items = [ new FadeItem() ];
   $audio = audio;
   $q = q;
-  $fileSystem = fileSystem;
-
-  fileSystem.requestQuota(10);
+  $userConfig = userConfig;
+  $cueEngine = cueEngine;
 
   this.dragListeners = {
     itemMoved: function (e) {},
@@ -115,43 +117,35 @@ Library.prototype.populateWorkspace = function(entry)
   };
   readEntries(entry.createReader());
 
-  def.promise.then(function (resources) { 
+  return def.promise.then(function (resources) { 
     library.rawResources.push.apply(library.rawResources, resources);
 
-    $fileSystem.readFile("stagecue-library.js").then(function (v) {
-      console.debug('Saved settings loaded');
-      v = JSON.parse(v);
-      console.debug('Saved settings parsed');
+    return $q.when($userConfig.readConfig("library")).then(function (v) {
       if (v && v.items) {
-        v.items.forEach(function (c) {
-          if (c.type === 'audio') {
-
-            var i = new AudioItem();
-            i.name = c.name;
-
-            library.items.push(i);
-            var res = library.rawResources.scFind(function (r) { return r.name == c.name; });
+        this.items = LibraryItem.thawItems(v.items);
+        items.forEach(function (i) {
+          library.items.push(i);
+          if ('loadFromResource' in i)
+          {
+            var res = StageCue.arrayFind.call(library.rawResources, function (r) { return r.name == i.name; });
             if (!res) return;
             $q.when(i.loadFromResource(res)).finally();
           }
         });
       }
-    }, function (err) {
-      console.info('Failed to load saved settings', err);
     });
   });
 }
 
 Library.prototype.flush = function flush() {
-  $fileSystem.writeText("stagecue-library.js", 
+  var value =
     JSON.stringify(
-      {
-        items: this.items
-          .filter(function (i) { return !i.isBuiltin; })
-          .map(function (i) { return i.persist(); })
-      }
-    )
-  ).catch(function(e) { console.log('Failed to flush', e); });
+    {
+      items: this.items
+        .filter(function (i) { return !i.isBuiltin; })
+        .map(function (i) { return i.persist(); })
+    });
+  $userConfig.saveConfig('library', value);
 };
 
 Library.prototype.addResource = function (resource, callback)
@@ -166,13 +160,10 @@ Library.prototype.addResource = function (resource, callback)
   });
 };
 
-Library.prototype.remove = function (item)
+Library.prototype.removeAt = function (index)
 {
-  var i = this.items.indexOf(item);
-  if (i > -1) {
-    this.items.splice(i, 1);
-    this.flush();
-  }
+  this.items.splice(index, 1);
+  this.flush();
 };
 
-angular.module("stageCue").service("sc.library", ['sc.audio', '$q', 'fileSystem', Library]);
+angular.module("stageCue").service("sc.library", ['sc.audio', '$q', 'sc.userConfig', Library]);

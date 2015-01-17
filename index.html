@@ -8,24 +8,30 @@
     <link rel="stylesheet" href="css/bootstrap.min.css">
     <link rel="stylesheet" href="css/ng-sortable.min.css">
     <link rel="stylesheet" href="css/bg-splitter.css">
+    <link rel="stylesheet" href="css/xeditable.css">
     <link rel="stylesheet" href="css/index.css">
 
     <script src="js/jquery.min.js"></script>
+    <script src="js/jquery-ui.min.js"></script>
     <script src="js/bootstrap.min.js"></script>
     <script src="js/angular.min.js"></script>
-    <script src="js/ng-sortable.min.js"></script>
+    <script src="js/xeditable.min.js"></script>
+    <script src="js/ng-sortable.js"></script>
     <script src="js/ng-contextmenu.js"></script>
     <script src="js/ng-filesystem.js"></script>
     <script src="js/bg-splitter.js"></script>
     <script src="js/stagecue-app.js"></script>
     <script src="js/stagecue-app-library.js"></script>
+    <script src="js/stagecue-app-cuesheet.js"></script>
+    <script src="js/stagecue-cueengine.js"></script>
+    <script src="js/stagecue-userconfig.js"></script>
     <script src="js/stagecue-library.js"></script>
     <script src="js/stagecue-audio.js"></script>
     <script src="js/workspace-loader.js"></script>
   </head>
   <body>
 
-  <table style="width: 100%; height: 100%">
+  <table style="width: 100%; height: 100%; display: table;">
     <tr height="60"><td>
       <div class="navbar navbar-default">
         <div class="navbar-header">
@@ -47,6 +53,7 @@
       <div class="workspace" id="workspace-active" data-ng-show="stageReady">
         <bg-splitter data-ng-attr-orientation="horizontal" data-ng-attr-init-pos="300">
           <bg-pane data-ng-attr-min-size="100" id="library-cell">
+            <!-- Library -->
             <div class="panel panel-primary" data-ng-controller="sc.app.library">
               <modal id="dialog-add-library" data-ng-attr-title="Add to Library" data-ng-attr-visible="isAddResourceVisible">
                 <div class="progress" data-ng-show="isAddResourceLoading">
@@ -68,14 +75,14 @@
                   </button>
                 </div>
                 <div class="list-group" data-as-sortable="libraryDragOptions" data-ng-model="items">
-                  <div class="list-group-item library-item" data-ng-repeat="i in items" data-as-sortable-item>
+                  <div class="list-group-item library-item" data-ng-repeat="i in items" data-as-sortable-item data-ng-click="addToCueSheet(i)">
                     <div data-as-sortable-item-handle></div>                    
                     <div data-ng-class="{'item-previewing': i.previewing}" data-ng-if="i.type == 'audio'"
-                         data-ng-attr-context-menu="js/library-context.html" data-ng-model="i">
-                      <a><div class="item-name">{{ i.name }}</div><canvas data-draw-audio data-ng-attr-audio-buffer="i.buffer"></canvas></a>
+                         data-ng-attr-context-menu="partials/library-context.html" data-ng-model="i">
+                      <div class="item-name">{{ i.name }}</div><canvas data-draw-audio data-ng-attr-audio-buffer="i.buffer"></canvas>
                     </div>
                     <div data-ng-class="{'item-previewing': i.previewing}" data-ng-if="i.type == 'fade'">
-                      <a data-ng-if="i.type == 'fade'">Fade Control</a>
+                      Fade Control
                     </div>
                   </div>
                 </div>
@@ -83,16 +90,63 @@
             </div>
           </bg-pane>
           <bg-pane data-ng-attr-min-size="150">
-            <bg-splitter data-ng-attr-orientation="vertical">
-              <bg-pane data-ng-attr-min-size="50">
-                <div class="panel">
-                </div>
-              </bg-pane>
-              <bg-pane data-ng-attr-min-size="50">
-                <div class="panel panel-warning">
-                </div>
-              </bg-pane>
-            </bg-splitter>
+            <div data-ng-controller="sc.app.cueSheet">
+              <!-- Cue Sheet -->
+              <bg-splitter data-ng-attr-orientation="vertical">
+                <bg-pane data-ng-attr-min-size="50">
+                  <div class="panel">
+                  </div>
+                </bg-pane>
+                <bg-pane data-ng-attr-min-size="50">
+                  <div class="panel panel-warning" id="cuesheet-cell">
+                    <table id="cuesheet">
+                      <colgroup>
+                        <col>
+                        <col>
+                        <col class="channel" data-ng-repeat="i in channels" data-ng-class="{'channel-audio': i.type == 'audio', 'channel-html': i.type == 'html'}">
+                      </colgroup>
+                      <thead>
+                        <tr data-as-sortable="channelDragOptions" data-ng-model="channels">
+                          <th class="cue-handle"></th>
+                          <th>
+                            Cue
+                            <button type="button" class="btn btn-default btn-xs" data-ng-click="addAudioChannel()"><span class="glyphicon glyphicon-plus"></span> Audio</button>
+                            <button type="button" class="btn btn-default btn-xs" data-ng-click="addHtmlChannel()"><span class="glyphicon glyphicon-plus"></span> HTML</button>
+                          </th>
+                          <th class="channel" data-ng-repeat="i in channels" 
+                              data-as-sortable-item 
+                              data-ng-attr-context-menu="partials/channel-context.html"
+                              data-ng-class="{'channel-audio': i.type == 'audio', 'channel-html': i.type == 'html'}">
+                            <span data-buttons="no" data-editable-text="i.name" data-as-sortable-item-handle>{{ i.name }}</span>                              
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody data-as-sortable="cueDragOptions" data-ng-model="cues">
+                        <tr class="cue" data-ng-repeat="c in cues"
+                            data-ng-dblclick="setCurrentAt($index)"
+                            data-ng-class="{'current': engine.current == $index}"
+                            data-scroll-into-view-if="engine.current == $index"
+                            data-as-sortable="cueItemDragOptions" data-ng-model="c.items"> <!--  data-as-sortable-item data-as-sortable-item-up -->
+                          <td class="cue-handle"></td> <!--  data-as-sortable-item-handle -->
+                          <td class="cue-description"
+                              data-ng-attr-context-menu="partials/cue-context.html">
+                            <span data-buttons="no" data-editable-text="c.description">{{ c.description }}</span>
+                          </td>
+                          <td data-ng-repeat="i in c.items" data-as-sortable-item>
+                            <div data-ng-attr-context-menu="partials/cue-item-context.html" class="cue-item">
+                              <div data-as-sortable-item-handle 
+                                   class="cue-item" data-ng-class="{'cue-item-audio': i.type == 'audio', 'cue-item-html': i.type == 'html'}">
+                                {{ i.name || '' }}
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </bg-pane>
+              </bg-splitter>
+            </div>
           </bg-pane>
         </bg-splitter>
       </div>

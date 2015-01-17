@@ -1,20 +1,53 @@
-var stage = angular.module("stageCue", ["ui.sortable", 'bgDirectives', 'ngContextMenu', 'fileSystem']);
+var stage = angular.module("stageCue", ["ui.sortable", 'bgDirectives', 'ngContextMenu', 'fileSystem', 'xeditable']);
 
-stage.controller("sc.app", ['$scope', 'sc.audio', 'sc.library',
-function ($scope, audioService, library) {
+var StageCue = StageCue || {};
+StageCue.thawItemsByType = function thawItemsByType(values, types) {
+  var typeMap = [];
+  types.forEach(function (i) { typeMap[i.prototype.type] = i; });
+  var results = 
+    values
+      .filter(function (v) { return !('type' in v) || v.type in typeMap; })
+      .map(function (v) { 
+        if (!('type' in v)) return {};
+        var item = new typeMap[v.type];
+        item.thaw(v);
+        return item;
+      });
+  return results;
+};
+
+StageCue.arrayFind = function arrayFind(callback, thisArg)
+{
+  for (var i = 0; i < this.length; i++) {
+    if (callback.call(thisArg, this[i])) return this[i];
+  }
+  return undefined;
+};
+
+
+stage.run(function(editableThemes, editableOptions) {
+  editableOptions.theme = 'bs3'; // bootstrap3 theme. Can be also 'bs2', 'default'
+  editableThemes.bs3.inputClass = 'input-sm';
+  editableThemes.bs3.buttonsClass = 'btn-sm';  
+});
+
+stage.controller("sc.app", ['$q', '$scope', '$timeout', 'sc.audio', 'sc.library', 'sc.cueEngine',
+function ($q, $scope, $timeout, audioService, library, cueEngine) {
   $scope.stageReady = false;
 
   $scope.setStageReady = function(workspaceEntry) { 
-    $scope.$apply(function() {
-      $scope.stageReady = true; 
-      library.populateWorkspace(workspaceEntry);
+    $timeout(function() { $scope.stageReady = true; });
+    $timeout(function() {
+      $q
+        .when(library.populateWorkspace(workspaceEntry))
+        .then(function() { cueEngine.thaw(library.items) });
     });
   }
 }]);
 
 stage.directive('modal', function () {
   return {
-    templateUrl: 'js/modal.html',
+    templateUrl: 'partials/modal.html',
     restrict: 'E',
     transclude: true,
     replace:true,
@@ -86,6 +119,29 @@ stage.directive("drawAudio", function(){
       }
     }
   };
+});
+
+stage.directive('scrollIntoViewIf', function () {
+  return {
+    restrict: 'A',
+    link: function (scope, element, attrs) {
+      scope.$watch(attrs.scrollIntoViewIf, function action(value) {
+        if (value) {
+          var pos = element.position().top;
+          var height = element.outerHeight();
+          var parent = element.scrollParent();
+          if (pos < 0) {
+            parent.scrollTop(parent.scrollTop() + pos - height);
+          } else {
+            if (pos + height > parent.innerHeight())
+            {
+              parent.scrollTop(parent.scrollTop() + pos - height);
+            }
+          }
+        }
+      });
+    }
+  }
 });
 
 function initStage(workspaceEntry)
