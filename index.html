@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en" data-ng-app="stageCue" data-ng-controller="sc.app">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Welcome</title>
+    <link rel="stylesheet" href="css/bootstrap.min.css">
+    <link rel="stylesheet" href="css/ng-sortable.min.css">
+    <link rel="stylesheet" href="css/bg-splitter.css">
+    <link rel="stylesheet" href="css/index.css">
+
+    <script src="js/jquery.min.js"></script>
+    <script src="js/bootstrap.min.js"></script>
+    <script src="js/angular.min.js"></script>
+    <script src="js/ng-sortable.min.js"></script>
+    <script src="js/ng-contextmenu.js"></script>
+    <script src="js/ng-filesystem.js"></script>
+    <script src="js/bg-splitter.js"></script>
+    <script src="js/stagecue-app.js"></script>
+    <script src="js/stagecue-app-library.js"></script>
+    <script src="js/stagecue-library.js"></script>
+    <script src="js/stagecue-audio.js"></script>
+    <script src="js/workspace-loader.js"></script>
+  </head>
+  <body>
+
+  <table style="width: 100%; height: 100%">
+    <tr height="60"><td>
+      <div class="navbar navbar-default">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-responsive-collapse">
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <span class="navbar-brand" style="font-variant: small-caps">StageCue</span>
+        </div>
+      </div>
+    </td></tr>
+    <tr height="100%"><td>
+      <div class="workspace" id="workspace-drop" data-ng-hide="stageReady">
+        <span>
+          Drop a folder here as workspace to start
+        </span>
+      </div>
+      <div class="workspace" id="workspace-active" data-ng-show="stageReady">
+        <bg-splitter data-ng-attr-orientation="horizontal" data-ng-attr-init-pos="300">
+          <bg-pane data-ng-attr-min-size="100" id="library-cell">
+            <div class="panel panel-primary" data-ng-controller="sc.app.library">
+              <modal id="dialog-add-library" data-ng-attr-title="Add to Library" data-ng-attr-visible="isAddResourceVisible">
+                <div class="progress" data-ng-show="isAddResourceLoading">
+                  <div class="progress-bar progress-bar-striped active" role="progressbar" aria-valuenow="45" aria-valuemin="0" aria-valuemax="100" style="width: 100%">
+                  </div>
+                </div>          
+                <div data-ng-if="!isAddResourceLoading && isAddResourceVisible">
+                  <span data-ng-repeat="i in rawResources"><button type="button" class="btn btn-default" data-ng-click="addResource(i)">{{ i.name }}</button> </span>
+                </div>
+              </modal>
+              <div class="panel-body">
+                <div style="text-align: right;">
+                  <button type="button" class="btn btn-default" data-ng-click="stopPreview()" data-ng-show="itemPreviewing">
+                    <span class="glyphicon glyphicon-stop"></span> Stop</span>
+                  </button>
+
+                  <button type="button" class="btn btn-default btn-primary" data-ng-click="showAddResource()">
+                    <span class="glyphicon glyphicon-plus"></span> Add</span>
+                  </button>
+                </div>
+                <div class="list-group" data-as-sortable="libraryDragOptions" data-ng-model="items">
+                  <div class="list-group-item library-item" data-ng-repeat="i in items" data-as-sortable-item>
+                    <div data-as-sortable-item-handle></div>                    
+                    <div data-ng-class="{'item-previewing': i.previewing}" data-ng-if="i.type == 'audio'"
+                         data-ng-attr-context-menu="js/library-context.html" data-ng-model="i">
+                      <a><div class="item-name">{{ i.name }}</div><canvas data-draw-audio data-ng-attr-audio-buffer="i.buffer"></canvas></a>
+                    </div>
+                    <div data-ng-class="{'item-previewing': i.previewing}" data-ng-if="i.type == 'fade'">
+                      <a data-ng-if="i.type == 'fade'">Fade Control</a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </bg-pane>
+          <bg-pane data-ng-attr-min-size="150">
+            <bg-splitter data-ng-attr-orientation="vertical">
+              <bg-pane data-ng-attr-min-size="50">
+                <div class="panel">
+                </div>
+              </bg-pane>
+              <bg-pane data-ng-attr-min-size="50">
+                <div class="panel panel-warning">
+                </div>
+              </bg-pane>
+            </bg-splitter>
+          </bg-pane>
+        </bg-splitter>
+      </div>
+    </td></tr>
+  </table>
+  
+  </body>
+</html>
+
