@@ -1,5 +1,7 @@
 var $audio;
 var $userConfig;
+var $library;
+var $rootScope;
 
 function CueConfig()
 {
@@ -17,16 +19,18 @@ AudioCueConfig.prototype.constructor = AudioCueConfig;
 AudioCueConfig.prototype.type = 'audio';
 function AudioCueConfig()
 {
+  CueConfig.prototype.constructor.apply(this);  
 }
 
 CueConfig.thawItems = function thawItems(values) {
   return StageCue.thawItemsByType(values, [AudioCueConfig]);
 };
 
+Channel.prototype.type = null;
 function Channel()
 {
+  this.id = Math.floor((1 + Math.random()) * 0x100000000).toString(16).substring(1);
   this.name = 'Ch';
-  this.type = '';
 }
 
 Channel.prototype.persist = function persist() {
@@ -41,6 +45,7 @@ AudioChannel.prototype.constructor = AudioChannel;
 AudioChannel.prototype.type = 'audio';
 function AudioChannel()
 {
+  Channel.prototype.constructor.apply(this);  
 }
 
 HtmlChannel.prototype = new Channel();
@@ -48,6 +53,7 @@ HtmlChannel.prototype.constructor = HtmlChannel;
 HtmlChannel.prototype.type = 'html';
 function HtmlChannel()
 {
+  Channel.prototype.constructor.apply(this);  
 }
 
 Channel.thawItems = function thawItems(values) {
@@ -121,12 +127,18 @@ Cue.prototype.removeChannelAt = function removeChannelAt(index)
   this.configs.splice(index, 1);
 };
 
-function CueEngine(audio, userConfig)
+function CueEngine(audio, userConfig, library, rootScope)
 {
+  $library = library;
   $audio = audio;
   $userConfig = userConfig;
+  $rootScope = rootScope;
+  userConfig.onPersist('cueEngine', this.persist, this);
+  userConfig.onThaw('cueEngine', this.thaw, this);
+
   this.current = -1;
   this.running = false;
+  this.runningEra = 0;
   this.cues = [];
   this.channels = [];
   this.loaded = false;
@@ -138,6 +150,10 @@ CueEngine.prototype.addChannel = function addChannel(channel)
   if (this.running) return;
   channel.name = 'Ch ' + this.channels.length;
   this.channels.push(channel);
+  
+  if (channel instanceof AudioChannel)
+    $audio.addChannel(channel);
+
   this.cues.forEach(function (cue) {
     cue.addChannel();
   });
@@ -147,7 +163,12 @@ CueEngine.prototype.addChannel = function addChannel(channel)
 CueEngine.prototype.removeChannelAt = function removeChannelAt(index)
 {
   if (this.running) return;
-  this.channels.splice(index, 1);
+  var channels = this.channels.splice(index, 1);
+  var channel = channels[0];
+
+  if (channel instanceof AudioChannel)
+    $audio.removeChannel(channel);
+
   this.cues.forEach(function (cue) {
     cue.removeChannelAt(index);
   });
@@ -215,45 +236,98 @@ CueEngine.prototype.setCurrentAt = function setCurrentAt(index)
   this.current = index;
 };
 
-CueEngine.prototype.run = function run()
+CueEngine.prototype.go = function go()
 {
+  if (this.running) this.current++;
+  if (this.current < 0 || this.current >= this.cues.length)
+  {
+    if (this.running) {
+      this.stop();
+      this.current = 0;
+    }
+    return;
+  }
+  this.running = true;
+  var era = ++this.runningEra;
+  this.runningItemCount = 0;
+
+  var cue = this.cues[this.current];
+  for (var i = 0; i < cue.items.length; i++)
+  {
+    var item = cue.items[i];
+    if (item instanceof AudioItem) {
+      this.runningItemCount++;
+      $audio.go(this.channels[i], item, cue.configs[i], function() { this.cueItemEndCallback(era); }, this);
+    }
+  }
 };
+
+CueEngine.prototype.cueItemEndCallback = function cueItemEndCallback(state)
+{
+  if (state == this.runningEra)
+  {
+    if (--this.runningItemCount <= 0)
+    {
+      this.stop();
+      $rootScope.$apply();
+    }
+  }
+};
+
 
 CueEngine.prototype.stop = function stop()
 {
+  if (!this.running) return;
+  this.running = false;
+  if (this.current < this.cues.length) this.current++; else this.current=0;
+  for (var i = 0; i < this.channels.length; i++)
+  {
+    var channel = this.channels[i];
+    if (channel instanceof AudioChannel) {
+      $audio.stop(channel);
+    }
+  }
 };
 
 CueEngine.prototype.flush = function flush()
 {
   if (!this.loaded) return
-  var value =
-    JSON.stringify(
+  $userConfig.raiseDirty('cueEngine');
+}
+
+CueEngine.prototype.persist = function persist() {
+  var result =
     {
       channels: this.channels.map(function (i) { return i.persist(); }),
       cues: this.cues.map(function (i) { return i.persist(); })
-    });
-  $userConfig.saveConfig('cueengine', value);
+    };
+  return result;
 };
 
-CueEngine.prototype.thaw = function thaw(libraryItems)
+CueEngine.prototype.thaw = function thaw(v)
 {
-  var libraryItemMap = [];
-  libraryItems.forEach(function (i) { libraryItemMap[i.id] = i; });
-
-  var engine = this;
-
-  $q.when($userConfig.readConfig("cueengine")).then(function (v) {
-    engine.channels.splice(0);
-    engine.cues.splice(0);
-    engine.channels.push.apply(engine.channels, Channel.thawItems(v.channels));
-    engine.cues.push.apply(engine.cues, v.cues.map(function (i) {
-      var item = new Cue(); 
-      item.thaw(i, libraryItemMap); 
-      return item; 
-    }));
-    engine.setCurrentAt(0);
-  });
   this.loaded = true;
+  if (v == null) return;
+
+  var libraryItemMap = {};
+  $library.items.forEach(function (i) { libraryItemMap[i.id] = i; });
+
+  this.channels.splice(0);
+  this.cues.splice(0);
+  var newChannels = Channel.thawItems(v.channels);
+  this.channels.push.apply(this.channels, newChannels);
+  for (var i = 0; i < newChannels.length; i++)
+  {
+    var channel = newChannels[i];
+    if (channel instanceof AudioChannel)
+      $audio.addChannel(channel);
+  }
+  this.cues.push.apply(this.cues, v.cues.map(function (i) {
+    var item = new Cue(); 
+    item.thaw(i, libraryItemMap); 
+    return item; 
+  }));
+  this.setCurrentAt(0);
 }
 
-angular.module("stageCue").service("sc.cueEngine", ['sc.audio', 'sc.userConfig', CueEngine]);
+angular.module("stageCue").service("sc.cueEngine", ['sc.audio', 'sc.userConfig', 'sc.library', '$rootScope', CueEngine]);

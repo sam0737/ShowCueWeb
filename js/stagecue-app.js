@@ -24,6 +24,11 @@ StageCue.arrayFind = function arrayFind(callback, thisArg)
   return undefined;
 };
 
+StageCue.raiseJsonDownloadPrompt = function raiseJsonDownloadPrompt(filename, text)
+{
+  var uriContent = "data:application/json;filename="+filename+"," + text;
+  window.open(uriContent);
+}
 
 stage.run(function(editableThemes, editableOptions) {
   editableOptions.theme = 'bs3'; // bootstrap3 theme. Can be also 'bs2', 'default'
@@ -31,8 +36,16 @@ stage.run(function(editableThemes, editableOptions) {
   editableThemes.bs3.buttonsClass = 'btn-sm';  
 });
 
-stage.controller("sc.app", ['$q', '$scope', '$timeout', 'sc.audio', 'sc.library', 'sc.cueEngine',
-function ($q, $scope, $timeout, audioService, library, cueEngine) {
+stage.controller("sc.app", ['$q', '$scope', '$timeout', 'sc.userConfig', 'sc.library', 'sc.cueEngine',
+function ($q, $scope, $timeout, userConfig, library, cueEngine) {
+  $scope.resetConfig = function() {
+    userConfig.reset();
+  };
+  $scope.downloadConfig = function() {
+    StageCue.raiseJsonDownloadPrompt('showcue-config.js', JSON.stringify(userConfig.data));
+  };
+
+  $scope.cueEngine = cueEngine;
   $scope.stageReady = false;
 
   $scope.setStageReady = function(workspaceEntry) { 
@@ -40,7 +53,7 @@ function ($q, $scope, $timeout, audioService, library, cueEngine) {
     $timeout(function() {
       $q
         .when(library.populateWorkspace(workspaceEntry))
-        .then(function() { cueEngine.thaw(library.items) });
+        .then(function() { userConfig.thaw(); })
     });
   }
 }]);

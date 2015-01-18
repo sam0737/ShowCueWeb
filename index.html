@@ -33,14 +33,15 @@
 
   <table style="width: 100%; height: 100%; display: table;">
     <tr height="60"><td>
-      <div class="navbar navbar-default">
+      <div class="navbar navbar-default" data-ng-class="{'show-running': cueEngine.running}">
         <div class="navbar-header">
-          <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-responsive-collapse">
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-          </button>
           <span class="navbar-brand" style="font-variant: small-caps">StageCue</span>
+        </div>
+        <div class="navbar-collapse">
+          <form class="navbar-form navbar-right">
+            <button class="btn btn-default" data-ng-click="downloadConfig()" data-ng-show="stageReady">Download Config</button>
+            <button class="btn btn-danger" data-ng-click="resetConfig()" data-ng-hide="stageReady">Reset Config</button>
+          </form>
         </div>
       </div>
     </td></tr>
@@ -91,15 +92,35 @@
           </bg-pane>
           <bg-pane data-ng-attr-min-size="150">
             <div data-ng-controller="sc.app.cueSheet">
-              <!-- Cue Sheet -->
               <bg-splitter data-ng-attr-orientation="vertical">
-                <bg-pane data-ng-attr-min-size="50">
+                <bg-pane data-ng-attr-min-size="100">
                   <div class="panel">
+                  <!-- Control Panel -->
+                    <table class="cuesheet" id="master">
+                      <colgroup>
+                        <col>
+                        <col>
+                        <col class="channel" data-ng-repeat="i in channels" data-ng-class="{'channel-audio': i.type == 'audio', 'channel-html': i.type == 'html'}">
+                      </colgroup>
+                      <tbody>
+                        <tr>
+                          <td class="cue-handle"></td>
+                          <td id="master-cell">
+                            <h3 id="running-cue">{{ cueEngine.cues[cueEngine.current].description }}</h3>
+                            <button type="button" class="btn btn-success btn-lg" data-ng-click="go()" title="Space"><span class="glyphicon glyphicon-play"></span> Go</button>
+                            <button type="button" class="btn btn-default btn-lg" data-ng-click="stop()" title="Esc"><span class="glyphicon glyphicon-stop"></span> Stop</button>
+                          </td>
+                          <td class="channel" data-ng-repeat="i in channels">
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
                   </div>
                 </bg-pane>
                 <bg-pane data-ng-attr-min-size="50">
+                  <!-- Cue Sheet -->
                   <div class="panel panel-warning" id="cuesheet-cell">
-                    <table id="cuesheet">
+                    <table class="cuesheet" id="cuesheet">
                       <colgroup>
                         <col>
                         <col>
@@ -117,7 +138,7 @@
                               data-as-sortable-item 
                               data-ng-attr-context-menu="partials/channel-context.html"
                               data-ng-class="{'channel-audio': i.type == 'audio', 'channel-html': i.type == 'html'}">
-                            <span data-buttons="no" data-editable-text="i.name" data-as-sortable-item-handle>{{ i.name }}</span>                              
+                            <span data-buttons="no" data-blur="submit" data-editable-text="i.name" data-as-sortable-item-handle>{{ i.name }}</span>                              
                           </th>
                         </tr>
                       </thead>
@@ -130,7 +151,7 @@
                           <td class="cue-handle"></td> <!--  data-as-sortable-item-handle -->
                           <td class="cue-description"
                               data-ng-attr-context-menu="partials/cue-context.html">
-                            <span data-buttons="no" data-editable-text="c.description">{{ c.description }}</span>
+                            <span data-buttons="no" data-blur="submit" data-editable-text="c.description">{{ c.description }}</span>
                           </td>
                           <td data-ng-repeat="i in c.items" data-as-sortable-item>
                             <div data-ng-attr-context-menu="partials/cue-item-context.html" class="cue-item">

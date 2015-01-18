@@ -3,6 +3,14 @@ function ($scope, $q, cueEngine, $document) {
   $scope.cues = cueEngine.cues;
   $scope.channels = cueEngine.channels;
   $scope.engine = cueEngine;
+
+  $scope.go = function go() {
+    cueEngine.go();
+  };
+  $scope.stop = function stop() {
+    cueEngine.stop();
+  };
+
   $scope.channelDragOptions = {
     accept: function (sourceItemHandleScope, destSortableScope) {
       if (cueEngine.running) return false;
@@ -25,6 +33,7 @@ function ($scope, $q, cueEngine, $document) {
     },
     orderChanged: function (e) {
       e.dest.sortableScope.$parent.c.itemReordered(e.source.index, e.dest.index);
+      cueEngine.flush();
     }
   };
   $scope.addAudioChannel = function addAudioChannel() {
@@ -51,27 +60,50 @@ function ($scope, $q, cueEngine, $document) {
   $scope.removeCueItemAt = function removeCueItemAt(cueIndex, index) {
     cueEngine.removeCueItemAt(cueIndex, index);
   };
+  $scope.showDescriptionField = function showDescriptionField() {
+    var index = cueEngine.current;
+    if (index < 0 || index >= cueEngine.cues.length) return;
+    // TODO.
+  };
 
   $document.on('keydown', ':not(input)', function(e) {
     var processed = function() {
-      if (e.keyCode == 38) { // Up
-        if (e.ctrlKey && e.shiftKey)
+      if (e.keyCode == 32) { // Space
+        if (!e.ctrlKey && !e.shiftKey && !e.altKey && !e.metaKey)
+          $scope.go();
+        else return false;
+        return true;
+      }
+      else if (e.keyCode == 27) { // Esc
+        if (!e.ctrlKey && !e.shiftKey && !e.altKey && !e.metaKey)
+          $scope.stop();
+        else return false;
+        return true;
+      }
+      else if (e.keyCode == 113) { // F2
+        if (!e.ctrlKey && !e.shiftKey && !e.altKey && !e.metaKey)
+          $scope.showDescriptionField();
+        else return false;
+        return true;
+      }
+      else if (e.keyCode == 38) { // Up
+        if (e.ctrlKey && e.shiftKey && !e.altKey && !e.metaKey)
           $scope.moveCueUp(cueEngine.current);
-        else if (e.ctrlKey)
+        else if (e.ctrlKey && !e.shiftKey && !e.altKey && !e.metaKey)
           $scope.setCurrentAt(cueEngine.current - 1);
         else return false;
         return true;
       }
       if (e.keyCode == 40) { // Down
-        if (e.ctrlKey && e.shiftKey)
+        if (e.ctrlKey && e.shiftKey && !e.altKey && !e.metaKey)
           $scope.moveCueDown(cueEngine.current);
-        else if (e.ctrlKey)
+        else if (e.ctrlKey && !e.shiftKey && !e.altKey && !e.metaKey)
           $scope.setCurrentAt(cueEngine.current + 1);
         else return false;
         return true;
       }
       if (e.keyCode == 46) { // Delete
-        if (e.ctrlKey)
+        if (e.ctrlKey && !e.shiftKey && !e.altKey && !e.metaKey)
           $scope.removeCueAt(cueEngine.current);
         else return false;
         return true;

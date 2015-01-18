@@ -41,6 +41,7 @@ AudioItem.prototype = new LibraryItem();
 AudioItem.prototype.type = 'audio';
 AudioItem.prototype.constructor = AudioItem;
 function AudioItem() {
+  LibraryItem.prototype.constructor.apply(this);  
   this.previewing = false;
 };
 
@@ -73,6 +74,7 @@ FadeItem.prototype = new LibraryItem();
 FadeItem.prototype.type = 'fade';
 FadeItem.prototype.constructor = FadeItem;
 function FadeItem(resource, callback) {
+  LibraryItem.prototype.constructor.apply(this);  
   this.type = 'fade';
   this.isBuiltin = true;
 };
@@ -81,7 +83,11 @@ function Library(audio, q, userConfig, cueEngine) {
   this.items = [ new FadeItem() ];
   $audio = audio;
   $q = q;
+  
   $userConfig = userConfig;
+  userConfig.onPersist('library', this.persist, this);
+  userConfig.onThaw('library', this.thaw, this);
+
   $cueEngine = cueEngine;
 
   this.dragListeners = {
@@ -119,33 +125,37 @@ Library.prototype.populateWorkspace = function(entry)
 
   return def.promise.then(function (resources) { 
     library.rawResources.push.apply(library.rawResources, resources);
-
-    return $q.when($userConfig.readConfig("library")).then(function (v) {
-      if (v && v.items) {
-        this.items = LibraryItem.thawItems(v.items);
-        items.forEach(function (i) {
-          library.items.push(i);
-          if ('loadFromResource' in i)
-          {
-            var res = StageCue.arrayFind.call(library.rawResources, function (r) { return r.name == i.name; });
-            if (!res) return;
-            $q.when(i.loadFromResource(res)).finally();
-          }
-        });
-      }
-    });
   });
 }
 
 Library.prototype.flush = function flush() {
-  var value =
-    JSON.stringify(
+  $userConfig.raiseDirty('library');
+};
+
+Library.prototype.persist = function persist() {
+  var result =
     {
       items: this.items
         .filter(function (i) { return !i.isBuiltin; })
         .map(function (i) { return i.persist(); })
+    };
+  return result;
+};
+
+Library.prototype.thaw = function thaw(v) {
+  if (v && v.items)
+  {
+    var library = this;
+    this.items.push.apply(this.items, LibraryItem.thawItems(v.items));
+    this.items.forEach(function (i) {
+      if ('loadFromResource' in i)
+      {
+        var res = StageCue.arrayFind.call(library.rawResources, function (r) { return r.name == i.name; });
+        if (!res) return;
+        $q.when(i.loadFromResource(res)).finally();
+      }
     });
-  $userConfig.saveConfig('library', value);
+  }
 };
 
 Library.prototype.addResource = function (resource, callback)

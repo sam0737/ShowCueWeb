@@ -2,6 +2,7 @@ html, body {
   height: 100%;
 }
 .navbar { margin-bottom: 0; }
+.navbar.show-running { background: rgb(119, 179, 0); }
 
 ul.menu { position: absolute; border: 1px solid red; z-index: 100000; }
 
@@ -114,11 +115,11 @@ ul.menu li:hover {
   overflow: auto;
 }
 
-#cuesheet {
+.cuesheet {
   width: 100%;
 }
 
-#cuesheet tr, #cuesheet tr td {
+.cuesheet tr, #cuesheet tr td {
   height: 40px;
   position: relative;
 }
@@ -128,47 +129,47 @@ ul.menu li:hover {
               inset  0 -8px 8px -8px rgba(0,0,0,0.5)
 }
 
-#cuesheet th {
+.cuesheet th {
   padding: 0 5px;
 }
 
-#cuesheet col.channel {
+.cuesheet col.channel {
   border-left: 1px solid rgb(50, 50, 50);
   width: 100px;
 }
 
-#cuesheet col.channel-audio {
+.cuesheet col.channel-audio {
   background: rgba(42, 159, 214, 0.15);
 }
 
-#cuesheet col.channel-html {
+.cuesheet col.channel-html {
   background: rgba(226, 83, 1, 0.15);
 }
 
-#cuesheet #cuesheet-add-channel {
+.cuesheet #cuesheet-add-channel {
   text-align: right;
 }
 
-#cuesheet td.cue-description {
+.cuesheet td.cue-description {
   padding: 0 5px 0 5px;
 }
 
-#cuesheet .cue-item {
+.cuesheet .cue-item {
   height: 100%;
   width: 100%;
 }
   
-#cuesheet .cue-handle {
-  width: 5px; 
+.cuesheet .cue-handle {
+  width: 10px; 
   background: rgba(240, 88, 0, 0.5); 
 }
 
-#cuesheet tr.current td.cue-handle {
+.cuesheet tr.current td.cue-handle {
   width: 7px;
   background: rgba(240, 237, 0, 0.7);
 }
 
-#cuesheet form.editable-wrap, #cuesheet .form-group, #cuesheet .form-control {
+.cuesheet form.editable-wrap, #cuesheet .form-group, #cuesheet .form-control {
   width: 100%;
 }
 
@@ -178,4 +179,16 @@ ul.menu li:hover {
 
 .cue-item-html {
   background: rgba(226, 83, 1, 0.35);
+}
+
+#master, #master tr {
+  height: 100%;
+}
+
+#master td {
+  padding: 0 5px;
+}
+
+#master .cue-handle {
+  background: rgba(42, 159, 214, 0.5); 
 }

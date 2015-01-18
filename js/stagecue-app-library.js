@@ -2,6 +2,14 @@ angular.module("stageCue").controller("sc.app.library", ['$scope', '$q', 'sc.aud
 function ($scope, $q, audio, library, cueEngine) {
   $scope.rawResources = library.rawResources;
   $scope.items = library.items;
+  $scope.libraryDragOptions = {
+    accept: function (sourceItemHandleScope, destSortableScope) {
+      return sourceItemHandleScope.itemScope.sortableScope.$id == destSortableScope.$id;
+    },
+    orderChanged: function (e) {
+      library.flush();
+    }
+  }
 
   $scope.addLibraryLoading = false;
   $scope.isAddResourceVisible = false;

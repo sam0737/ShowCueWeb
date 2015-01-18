@@ -25,11 +25,5 @@ $(function()
       }            
     }
     return;
-    entry.getFile('meow.txt', {create: true}, function (fe) {
-      fe.createWriter(function (writer) {
-        var blob = new Blob(['Lorem Ipsum'], {type: 'text/plain'});
-        writer.write(blob);
-      });
-    }, function (x){console.log(x);});
   });
 });
