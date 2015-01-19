@@ -188,7 +188,7 @@ stage.directive("drawPicker", ['$document', function($document){
             } else if (time >= picks[1]) {
               pickTarget = 1;
             } else {
-              pickTarget = time <= picks[0] + picks[1] / 2 ? 0 : 1;
+              pickTarget = time <= (picks[0] + picks[1]) / 2 ? 0 : 1;
             }
           }
           dragging = { clientX: e.clientX, offsetX: e.offsetX }

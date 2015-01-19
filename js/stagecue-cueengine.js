@@ -281,7 +281,6 @@ CueEngine.prototype.removeCueItemAt = function removeCueItemAt(cueIndex, index)
 CueEngine.prototype.setCurrentAt = function setCurrentAt(index)
 {
   if (index < 0 || index >= this.cues.length) return;
-  this.stop();
   this.current = index;
 };
 
@@ -295,7 +294,7 @@ CueEngine.prototype.go = function go()
         if (this.current < 0 || this.current >= this.cues.length)
         {
           if (this.running) {
-            this.stop();
+            this.softStop();
             this.current = 0;
           }
           return;
@@ -330,19 +329,23 @@ CueEngine.prototype.cueItemEndCallback = function cueItemEndCallback(cue, era)
       if (cue.goMode == Cue.GO_AFTER_THIS) {
         this.go();
       } else {
-        this.stop();
+        this.softStop();
       }
     }
   }
 };
 
+CueEngine.prototype.softStop = function softStop()
+{
+  this.runningEra++;
+  if (!this.running) return;
+  this.running = false;
+  if (this.current < this.cues.length - 1) this.current++; else this.current=0;
+};
 
 CueEngine.prototype.stop = function stop()
 {
-  if (!this.running) return;
-  this.runningEra++;
-  this.running = false;
-  if (this.current < this.cues.length - 1) this.current++; else this.current=0;
+  this.softStop();
   for (var i = 0; i < this.channels.length; i++)
   {
     var channel = this.channels[i];

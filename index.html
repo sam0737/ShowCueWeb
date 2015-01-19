@@ -115,7 +115,7 @@
                 <bg-pane data-ng-attr-min-size="50">
                   <!-- Cue Sheet -->
                   <div class="panel panel-warning" id="cuesheet-cell">
-                    <table class="cuesheet no-select" id="cuesheet">
+                    <table class="cuesheet" id="cuesheet">
                       <colgroup>
                         <col>
                         <col>
@@ -133,7 +133,7 @@
                               data-as-sortable-item 
                               data-ng-attr-context-menu="partials/channel-context.html"
                               data-ng-class="{'channel-audio': i.type == 'audio', 'channel-html': i.type == 'html'}">
-                            <span data-buttons="no" data-blur="submit" data-editable-text="i.name" data-as-sortable-item-handle>{{ i.name || '...' }}</span>                              
+                            <span data-buttons="no" data-blur="submit" data-editable-text="i.name" data-onaftersave="flush()" data-as-sortable-item-handle>{{ i.name || '...' }}</span>                              
                           </th>
                         </tr>
                       </thead>
@@ -145,7 +145,7 @@
                           <td class="cue-handle"></td> <!--  data-as-sortable-item-handle -->
                           <td class="cue-description" style="position: relative"
                               data-ng-attr-context-menu="partials/cue-context.html">
-                            <span data-buttons="no" data-blur="submit" data-editable-text="c.description">{{ c.description || '...' }}</span>
+                            <span data-buttons="no" data-blur="submit" data-editable-text="c.description" data-onaftersave="flush()">{{ c.description || '...' }}</span>
                             <span class="cue-properties">
                               <span data-ng-If="c.goMode == 1" class="glyphicon glyphicon-link" title="Go with next immediately"></span>
                               <span data-ng-If="c.goMode == 2" class="glyphicon glyphicon-chevron-down" title="Go after this"></span>
@@ -153,7 +153,7 @@
                           </td>
                           <td data-ng-repeat="i in c.items" data-as-sortable-item data-ng-dblclick="configureCueItem(c, $index)">
                             {{ config = c.configs[$index]; '' }}
-                            <div class="cue-item">
+                            <div class="cue-item no-select">
                               <div data-as-sortable-item-handle class="cue-item cue-item-audio" data-ng-if="i.type == 'audio'">
                                 <span class="cue-properties">
                                   <span data-ng-If="config.gain != null" class="glyphicon glyphicon-sort" data-ng-attr-title="Gain set to {{config.gain}}"></span>
@@ -162,6 +162,7 @@
                                     data-ng-attr-title="Loop from {{ config.loop[0] }} to {{ config.loop[1] }}"></span>
                                   <span data-ng-If="config.range[0] != null && config.range[1] != null" class="glyphicon glyphicon-resize-horizontal" 
                                     data-ng-attr-title="Range from {{ config.range[0] }} to {{ config.range[1] }}"></span>
+                                  <span data-ng-If="config.allowOverlap" class="glyphicon glyphicon-pushpin" data-ng-attr-title="Allow overlap"></span>
                                 </span>
                                 {{ i.name || '' }}
                               </div>

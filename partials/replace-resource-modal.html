@@ -1,5 +1,5 @@
 <div class="modal-header"> 
-  <h3 class="modal-title">Add to Library</h3> 
+  <h3 class="modal-title">Replace with Resource</h3> 
 </div> 
 <div class="modal-body">
   <div class="progress" data-ng-show="isResourceLoading">
@@ -7,6 +7,6 @@
     </div>
   </div>          
   <div data-ng-if="!isResourceLoading">
-    <span data-ng-repeat="i in rawResources"><button type="button" class="btn btn-default" data-ng-click="addResource(i)">{{ i.name }}</button> </span>
+    <span data-ng-repeat="i in rawResources"><button type="button" class="btn btn-default" data-ng-click="replaceResource(i)">{{ i.name }}</button> </span>
   </div>
 </div> 

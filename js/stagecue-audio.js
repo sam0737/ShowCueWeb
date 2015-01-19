@@ -110,7 +110,7 @@ angular.module("stageCue").service("sc.audio", ['$q', function ($q) {
       clip.source.loop = false;
     }
     clip.source.start(
-      config.delay != null ? config.delay : 0,
+      config.delay != null ? a.currentTime + config.delay : 0,
       config.range[0] != null ? config.range[0] : 0,
       config.range[1] && config.range[0] != null ?
         config.range[1] - config.range[0] : 

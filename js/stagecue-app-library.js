@@ -22,12 +22,31 @@ function ($scope, $q, audio, library, cueEngine, $modal) {
 
   $scope.addResource = function(resource)
   {
-    $scope.isAddResourceLoading = true;
+    $scope.isResourceLoading = true;
     $q.when(library.addResource(resource)).finally(function() { 
-      $scope.isAddResourceLoading = false;
       modal.close();
+      $scope.isResourceLoading = false;
     });
   };
+
+  $scope.replaceTarget = null;
+  $scope.showReplace = function(item) {
+    audio.stopPreview();
+    $scope.replaceTarget = item;
+    modal = $modal.open({
+      templateUrl: 'partials/replace-resource-modal.html',
+      scope: $scope,
+    });
+  };
+
+  $scope.replaceResource = function(resource)
+  {
+    $scope.isResourceLoading = true;
+    $q.when(library.replaceResource(resource, $scope.replaceTarget)).finally(function() { 
+      modal.close();
+      $scope.isResourceLoading = false;
+    });
+  }
 
   $scope.itemPreviewing = 0;
   $scope.stopPreview = function() {

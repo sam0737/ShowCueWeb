@@ -181,7 +181,7 @@ Library.prototype.findResourceByName = function (name)
   return StageCue.arrayFind.call(this.rawResources, function (r) { return r.name == name; });
 };
 
-Library.prototype.addResource = function (resource, callback)
+Library.prototype.addResource = function (resource)
 {
   var library = this;
 
@@ -190,6 +190,15 @@ Library.prototype.addResource = function (resource, callback)
     library.items.push(i);
     library.flush();
     return i;
+  });
+};
+
+Library.prototype.replaceResource = function (resource, item)
+{
+  var library = this;
+  return $q.when(item.loadFromResource(resource)).then(function () {
+    library.flush();
+    return item;
   });
 };
 

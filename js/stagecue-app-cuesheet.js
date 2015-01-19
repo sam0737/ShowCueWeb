@@ -68,6 +68,9 @@ function ($scope, $q, cueEngine, $document, $modal, $modalStack) {
     if (index < 0 || index >= cueEngine.cues.length) return;
     // TODO.
   };
+  $scope.flush = function flush() {
+      cueEngine.flush();
+  };
 
   $scope.cueConfig = null;
   $scope.config = null;
