@@ -19,14 +19,15 @@ UserConfig.prototype.setPrefix = function setPrefix(prefix)
   this.filename = 'stagecue-' + prefix;
 }
 
-UserConfig.prototype.readConfig = function readConfig(filename)
+UserConfig.prototype.readConfig = function readConfig(filename, configData)
 {
-  return $fileSystem.readFile(filename).then(function (v) {
-      console.debug('Config ' + filename + ' loaded');
+  var source = (configData ? '<data>' : filename);
+  return $q.when(configData || $fileSystem.readFile(filename)).then(function (v) {
+      console.debug('Config ' + source + ' loaded');
       v = JSON.parse(v);
-      console.debug('Saved ' + filename + ' parsed');
+      console.debug('Saved ' + source + ' parsed');
       return v;
-  }).catch(function(e) { console.info('Failed to read config ' + filename, e); });
+  }).catch(function(e) { console.info('Failed to parse config ' + source, e); });
 };
 
 UserConfig.prototype.saveConfig = function saveConfig(filename, value)
@@ -51,11 +52,11 @@ UserConfig.prototype.onThaw = function onThaw(key, callback, context)
   });
 }
 
-UserConfig.prototype.thaw = function thaw()
+UserConfig.prototype.thaw = function thaw(configData)
 {
   var uc = this;
   var p =
-    $q.when(this.readConfig(this.filename))
+    $q.when(this.readConfig(this.filename, configData))
       .then(function (v) {
         if (v != null) uc.data = v;
         for (var i = 0; i < uc.thawCallbacks.length; i++)

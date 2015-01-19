@@ -9,6 +9,39 @@ function FileResource(fileEntry)
   this.name = fileEntry.name;
 };
 
+FileResource.prototype.readAsAudioBuffer = function readAsAudioBuffer() {
+  var def = $q.defer();
+  this.entry.file(function (file) {
+    var reader = new FileReader();
+
+    reader.onload = function(e) {
+      $audio.decodeAudioData(reader.result, 
+        function (buffer) {
+          def.resolve(buffer);
+        }, 
+        def.reject
+      );
+    };
+    reader.onerror = def.reject;
+    reader.readAsArrayBuffer(file);
+  }, def.reject);
+  return def.promise;
+};
+
+FileResource.prototype.readAsText = function readAsText() {
+  var def = $q.defer();
+  this.entry.file(function (file) {
+    var reader = new FileReader();
+
+    reader.onload = function(e) {
+      def.resolve(reader.result);
+    };
+    reader.onerror = def.reject;
+    reader.readAsText(file);
+  }, def.reject);
+  return def.promise;
+};
+
 function LibraryItem() {
   this.id = Math.floor((1 + Math.random()) * 0x100000000).toString(16).substring(1);
   this.isBuiltin = false;
@@ -47,27 +80,11 @@ function AudioItem() {
 
 AudioItem.prototype.loadFromResource = function loadFromResource(resource) {
   this.name = resource.name;
-
   var item = this;
-  var def = $q.defer();
 
-  resource.entry.file(function (file) {
-    var reader = new FileReader();
-
-    reader.onload = function(e) {
-      $audio.decodeAudioData(this.result, 
-        function (buffer) {
-          item.buffer = buffer;
-          def.resolve();
-        }, 
-        def.reject
-      );
-    };
-    reader.onerror = def.reject;
-    reader.readAsArrayBuffer(file);
-  }, def.reject);
-
-  return def.promise;
+  return $q.when(resource.readAsAudioBuffer())
+    .then(function (buffer) { item.buffer = buffer; })
+    .catch(function (result) { console.log('Failed to load as audio', resource.name, result); });
 };
 
 AudioControlItem.prototype = new LibraryItem();
@@ -151,12 +168,17 @@ Library.prototype.thaw = function thaw(v) {
     this.items.forEach(function (i) {
       if ('loadFromResource' in i)
       {
-        var res = StageCue.arrayFind.call(library.rawResources, function (r) { return r.name == i.name; });
+        var res = this.findResourceByName(i.name);
         if (!res) return;
         $q.when(i.loadFromResource(res)).finally();
       }
-    });
+    }, this);
   }
+};
+
+Library.prototype.findResourceByName = function (name)
+{
+  return StageCue.arrayFind.call(this.rawResources, function (r) { return r.name == name; });
 };
 
 Library.prototype.addResource = function (resource, callback)

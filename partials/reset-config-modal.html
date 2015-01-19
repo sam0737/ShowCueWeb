@@ -1,0 +1,14 @@
+<div class="modal-header"> 
+  <h3 class="modal-title">Reset Config</h3> 
+</div> 
+<form class="form-horizontal" name="resetForm" data-ng-submit="resetForm.$valid && $close()">
+  <div class="modal-body">
+    Are you sure?
+  </div>
+  <div class="modal-footer">
+    <input type="submit" class="btn btn-danger" value="Reset">
+    <button class="btn btn-default" data-ng-click="$dismiss()">No</button>
+  </div>
+</form>
+
+

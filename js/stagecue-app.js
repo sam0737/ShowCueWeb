@@ -26,7 +26,7 @@ StageCue.arrayFind = function arrayFind(callback, thisArg)
 
 StageCue.raiseJsonDownloadPrompt = function raiseJsonDownloadPrompt(filename, text)
 {
-  var uriContent = "data:application/json;filename="+filename+"," + text;
+  var uriContent = "data:application/json;charset=utf-8;filename="+filename+"," + encodeURIComponent(text);
   window.open(uriContent);
 }
 
@@ -36,13 +36,16 @@ stage.run(function(editableThemes, editableOptions) {
   editableThemes.bs3.buttonsClass = 'btn-sm';  
 });
 
-stage.controller("sc.app", ['$q', '$scope', '$timeout', 'sc.userConfig', 'sc.library', 'sc.cueEngine',
-function ($q, $scope, $timeout, userConfig, library, cueEngine) {
-  $scope.resetConfig = function() {
-    userConfig.reset();
+stage.controller("sc.app", ['$q', '$scope', '$timeout', 'sc.userConfig', 'sc.library', 'sc.cueEngine', '$modal',
+function ($q, $scope, $timeout, userConfig, library, cueEngine, $modal) {
+  $scope.resetConfig = function() {    
+    $modal.open({
+      templateUrl: 'partials/reset-config-modal.html',
+      scope: $scope,
+    }).result.then(function () { userConfig.reset(); });
   };
   $scope.downloadConfig = function() {
-    StageCue.raiseJsonDownloadPrompt('showcue-config.js', JSON.stringify(userConfig.data));
+    StageCue.raiseJsonDownloadPrompt('config.js', JSON.stringify(userConfig.data));
   };
 
   $scope.cueEngine = cueEngine;
@@ -53,7 +56,19 @@ function ($q, $scope, $timeout, userConfig, library, cueEngine) {
     $timeout(function() {
       $q
         .when(library.populateWorkspace(workspaceEntry))
-        .then(function() { userConfig.thaw(); })
+        .then(function() { 
+          var res = library.findResourceByName('config.js');
+          var configData = null;
+          if (res) {
+            console.debug("config.js found in workspace and will be used instead");
+            res.readAsText()
+              .then(function (result) { configData = result; })
+              .catch(function () { console.debug("Failed to read config.js"); })
+              .finally(function() { userConfig.thaw(configData); });
+          } else {
+            userConfig.thaw(); 
+          }
+        })
     });
   }
 }]);

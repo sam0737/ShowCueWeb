@@ -40,7 +40,8 @@
         </div>
         <div class="navbar-collapse">
           <form class="navbar-form navbar-right">
-            <button class="btn btn-default" data-ng-click="downloadConfig()" data-ng-show="stageReady">Download Config</button>
+            <button class="btn btn-default" data-ng-click="downloadConfig()" data-ng-show="stageReady" 
+              tooltip-placement="bottom" tooltip="Save as 'config.js' in the workspace">Download Config</button>
             <button class="btn btn-danger" data-ng-click="resetConfig()" data-ng-hide="stageReady">Reset Config</button>
           </form>
         </div>
