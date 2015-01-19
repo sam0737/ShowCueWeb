@@ -75,6 +75,8 @@ AudioControlItem.prototype.type = 'audio-control';
 AudioControlItem.prototype.constructor = AudioControlItem;
 function AudioControlItem(resource, callback) {
   LibraryItem.prototype.constructor.apply(this);  
+  this.name = '[Audio Control]';
+  this.id = '__audio-control';
   this.isBuiltin = true;
 };
 

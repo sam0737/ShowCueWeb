@@ -87,6 +87,8 @@ function ($scope, $q, cueEngine, $document, $modal, $modalStack) {
   };
 
   $scope.configureCueItem = function configureCueItem(cue, itemIndex) {
+    if (!(cue.items[itemIndex] instanceof LibraryItem)) 
+      return;
     var c = $scope.cueConfig = cue.persist();
     $scope.target = cue.items[itemIndex];
     $scope.config = c.configs[itemIndex];
@@ -97,6 +99,8 @@ function ($scope, $q, cueEngine, $document, $modal, $modalStack) {
   };
 
   $document.on('keydown', ':not(input)', function(e) {
+    if (!$(e.target).is(':not(input)'))
+      return;
     var processed = function() {
       if ($modalStack.getTop()) return false;
       switch (e.keyCode)
