@@ -1,4 +1,4 @@
-var stage = angular.module("stageCue", ["ui.sortable", 'bgDirectives', 'ngContextMenu', 'fileSystem', 'xeditable']);
+var stage = angular.module("stageCue", ["ui.sortable", 'bgDirectives', 'ngContextMenu', 'fileSystem', 'xeditable', 'ui.bootstrap']);
 
 var StageCue = StageCue || {};
 StageCue.thawItemsByType = function thawItemsByType(values, types) {
@@ -58,37 +58,29 @@ function ($q, $scope, $timeout, userConfig, library, cueEngine) {
   }
 }]);
 
-stage.directive('modal', function () {
+var OPTIONAL_NON_NEG_FLOAT_REGEXP = /^[0-9]+(\.[0-9]+)?$|^\.[0-9]+$|^\s*$/;
+stage.directive('cuefloat', function() {
   return {
-    templateUrl: 'partials/modal.html',
-    restrict: 'E',
-    transclude: true,
-    replace:true,
-    scope:true,
-    link: function postLink(scope, element, attrs) {
-      scope.title = attrs.title;
+    require: 'ngModel',
+    link: function(scope, elm, attrs, ctrl) {
+      ctrl.$validators.cuefloat = function(modelValue, viewValue) {
+        if (ctrl.$isEmpty(viewValue))
+          return true;
+        if (OPTIONAL_NON_NEG_FLOAT_REGEXP.test(viewValue)) {
+          return true;
+        }
 
-      scope.$watch(attrs.visible, function(value){
-        if(value == true)
-          $(element).modal('show');
-        else
-          $(element).modal('hide');
-      });
-
-      $(element).on('shown.bs.modal', function(){
-        scope.$apply(function(){
-          scope.$parent[attrs.visible] = true;
-        });
-      });
-
-      $(element).on('hidden.bs.modal', function(){
-        scope.$apply(function(){
-          scope.$parent[attrs.visible] = false;
-        });
+        return false;
+      };
+      ctrl.$parsers.push(function (viewValue) {
+        if (ctrl.$isEmpty(viewValue))
+          return null;
+        return parseFloat(viewValue);
       });
     }
   };
 });
+
 
 stage.directive("drawAudio", function(){
   return {
@@ -99,11 +91,21 @@ stage.directive("drawAudio", function(){
       e.width = $(e).width();
       e.height = $(e).height();
 
-      scope.$watch(attrs.audioBuffer, function(buffer) {
+      scope.$watchGroup([attrs.audioBuffer, attrs.widthRatio], function(values) {
+        var buffer = values[0];
+        var widthRatio = values[1];
         if (!buffer) return;
-        var data = buffer.getChannelData(0);
+        var data = buffer.getChannelData(0); // TODO: Draw at least two channel
+
+        if (widthRatio != null) {
+          var newWidth = buffer.duration * widthRatio;
+          $(e).width(newWidth);
+          e.width = newWidth;
+        }
+
         var W = e.width;
         var H = e.height;
+
         ctx.clearRect(0, 0, W, H);
         ctx.fillStyle = 'rgb(200, 200, 200)';
         ctx.moveTo(0, H);
@@ -114,11 +116,6 @@ stage.directive("drawAudio", function(){
         ctx.lineTo(W, H);
         ctx.fill();
       });
-
-      // canvas reset
-      function reset(){
-       element[0].width = element[0].width; 
-      }
 
       function draw(lX, lY, cX, cY){
         // line from
@@ -133,6 +130,141 @@ stage.directive("drawAudio", function(){
     }
   };
 });
+
+stage.directive("drawPicker", ['$document', function($document){
+  return {
+    restrict: "A",
+    link: function(scope, element, attrs){
+      var e = element[0];
+      var ctx = e.getContext('2d');
+
+      var picks = null;
+      var duration = null;
+
+      var pickTarget = null;
+
+      function pixelToTime(value) {
+        return value * duration / e.width;
+      };
+
+      var dragging = null;
+      var fnMouseup = function(e) {
+        if (pickTarget == null) return;
+        pickTarget = null;
+        dragging = null;
+        e.preventDefault();
+        e.stopPropagation();
+      };
+      var fnMousedown = function(e) {
+        if (!angular.isArray(picks) || !duration) return;
+        var time = pixelToTime(e.offsetX);
+        time = Math.min(Math.max(time, 0), duration);
+
+        if (pickTarget == null)
+        {
+          if (picks.length == 1) {
+            pickTarget = 0;
+          } else if (picks.length == 2) {
+            if (picks[0] == null || picks[1] == null) {
+              picks[0] = time;
+              pickTarget = 1;              
+            } else if (time <= picks[0]) {
+              pickTarget = 0;
+            } else if (time >= picks[1]) {
+              pickTarget = 1;
+            } else {
+              pickTarget = time <= picks[0] + picks[1] / 2 ? 0 : 1;
+            }
+          }
+          dragging = { clientX: e.clientX, offsetX: e.offsetX }
+          fnMousemove(e);
+          e.preventDefault();
+          e.stopPropagation();
+        }
+      };
+      var fnMousemove = function(e) {
+        scope.$apply(function() { 
+          var time = pixelToTime(e.clientX - element.offset().left);
+          time = Math.min(Math.max(time, 0), duration);
+          scope.graphCursorTime = time;
+
+          if (dragging == null || pickTarget == null) return;
+          if (!angular.isArray(picks) || !duration) return;
+
+          if (picks.length == 2)
+          {
+            if (pickTarget == 1 && time < picks[0]) { picks[1] = picks[0]; pickTarget = 0; }
+            if (pickTarget == 0 && time > picks[1]) { picks[0] = picks[1]; pickTarget = 1; }
+          }
+
+          picks[pickTarget] = time;
+          redrawLine();
+          e.preventDefault();
+          e.stopPropagation();
+        });
+      };
+
+      $document.on('mouseup', fnMouseup);
+      element.on('mousedown', fnMousedown);
+      $document.on('mousemove', fnMousemove);
+
+      scope.$on('$destroy', function () {
+        $document.off('mouseup', fnMouseup);
+        element.off('mousedown', fnMousedown);
+        $document.off('mousemove', fnMousemove);
+      });
+
+      function redrawLine()
+      {
+        var W = e.width;
+        var H = e.height;
+        ctx.clearRect(0, 0, W, H);
+
+        if (!angular.isArray(picks) || !duration) return;
+        if (picks.length == 1)
+        {
+          if (picks[0] != null)
+          {
+            var x = W * picks[0] / duration;
+            ctx.beginPath();
+            ctx.strokeStyle = "#FF0000";
+            ctx.moveTo(x, 0);
+            ctx.lineTo(x, H);
+            ctx.stroke();
+          }
+        } else if (picks.length == 2)
+        {
+          if (picks[0] != null && picks[1] != null)
+          {
+            var x1 = W * picks[0] / duration;
+            var x2 = W * picks[1] / duration;
+            ctx.beginPath();
+            ctx.fillStyle = "rgba(255,128,128,0.5)";
+            ctx.moveTo(x1, 0);
+            ctx.lineTo(x1, H);
+            ctx.lineTo(x2, H);
+            ctx.lineTo(x2, 0);
+            ctx.fill();
+          }
+        }
+      }
+
+      scope.$watch(attrs.picks, function(value) { picks = value; redrawLine(); });
+
+      scope.$watchGroup([attrs.duration, attrs.widthRatio], function(values) {
+        duration = values[0];
+        var widthRatio = values[1];
+        if (!duration) return;
+        if (widthRatio == null) return;
+
+        var newWidth = duration * widthRatio;
+        $(e).width(newWidth);
+        e.width = newWidth;
+        redrawLine();
+      });
+    }
+  };
+}]);
 
 stage.directive('scrollIntoViewIf', function () {
   return {
@@ -161,3 +293,46 @@ function initStage(workspaceEntry)
 {
   angular.element($('html')[0]).scope().setStageReady(workspaceEntry);
 }
+
+stage.directive('bufferTimePicker', ['$modal', '$filter', function($modal, $filter) {
+  return {
+    restrict: 'A',
+    require: 'ngModel',
+    scope: true,
+    link: function($scope, elm, attrs, ctrl) {
+      $scope.widthRatio = 10;
+      $scope.graphCursorTime = 0;
+
+      $scope.picks = [];
+      $scope.graphPicks = [];
+      ctrl.$render = function () {
+        $scope.picks = angular.isArray(ctrl.$modelValue) ? ctrl.$modelValue : [ ctrl.$modelValue ];
+      };      
+
+      $scope.$pick = function () {
+        $scope.graphPicks = [].concat($scope.picks);
+        $modal.open({
+          templateUrl: 'partials/buffer-time-picker-modal.html',
+          scope: $scope
+        }).result.then(function (value) { 
+          for (var i = 0; i < $scope.graphPicks.length; i++)
+          {
+            $scope.picks[i] = $filter('number')($scope.graphPicks[i], 2);
+          }
+        });
+      };
+    }
+  };
+}]);
+
+$(function(){
+    $.extend($.fn.disableTextSelect = function() {
+        return this.each(function(){
+            $(this).css('MozUserSelect','none');
+            $(this).bind('selectstart',function(){return false;});
+            $(this).mousedown(function(){return false;});
+        });
+    });
+    $('.no-select').disableTextSelect();//No text selection on elements with a class of 'noSelect'
+});
+

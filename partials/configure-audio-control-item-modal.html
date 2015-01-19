@@ -1,0 +1,15 @@
+<div class="modal-header"> 
+  <h3 class="modal-title">Configure Audio</h3> 
+</div> 
+<form class="form-inline">
+  <div class="modal-body">
+    <div class="checkbox">
+      <label>
+        <input type="checkbox" data-ng-model="config.allowOverlaps"> <abbr title="The next cue on the same channel won't stop this clip">Allows overlap</abbr>
+      </label>
+    </div>
+  </div> 
+  <div class="modal-footer">
+    <button class="btn btn-primary" data-ng-click="$close()">Ok</button>
+  </div>
+</form>

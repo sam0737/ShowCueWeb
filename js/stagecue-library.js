@@ -70,17 +70,16 @@ AudioItem.prototype.loadFromResource = function loadFromResource(resource) {
   return def.promise;
 };
 
-FadeItem.prototype = new LibraryItem();
-FadeItem.prototype.type = 'fade';
-FadeItem.prototype.constructor = FadeItem;
-function FadeItem(resource, callback) {
+AudioControlItem.prototype = new LibraryItem();
+AudioControlItem.prototype.type = 'audio-control';
+AudioControlItem.prototype.constructor = AudioControlItem;
+function AudioControlItem(resource, callback) {
   LibraryItem.prototype.constructor.apply(this);  
-  this.type = 'fade';
   this.isBuiltin = true;
 };
 
 function Library(audio, q, userConfig, cueEngine) {
-  this.items = [ new FadeItem() ];
+  this.items = [ new AudioControlItem() ];
   $audio = audio;
   $q = q;
   

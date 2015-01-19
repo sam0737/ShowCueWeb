@@ -15,6 +15,7 @@
     <script src="js/jquery-ui.min.js"></script>
     <script src="js/bootstrap.min.js"></script>
     <script src="js/angular.min.js"></script>
+    <script src="js/ui-bootstrap-tpls-0.12.0.min.js"></script>
     <script src="js/xeditable.min.js"></script>
     <script src="js/ng-sortable.js"></script>
     <script src="js/ng-contextmenu.js"></script>
@@ -55,16 +56,7 @@
         <bg-splitter data-ng-attr-orientation="horizontal" data-ng-attr-init-pos="300">
           <bg-pane data-ng-attr-min-size="100" id="library-cell">
             <!-- Library -->
-            <div class="panel panel-primary" data-ng-controller="sc.app.library">
-              <modal id="dialog-add-library" data-ng-attr-title="Add to Library" data-ng-attr-visible="isAddResourceVisible">
-                <div class="progress" data-ng-show="isAddResourceLoading">
-                  <div class="progress-bar progress-bar-striped active" role="progressbar" aria-valuenow="45" aria-valuemin="0" aria-valuemax="100" style="width: 100%">
-                  </div>
-                </div>          
-                <div data-ng-if="!isAddResourceLoading && isAddResourceVisible">
-                  <span data-ng-repeat="i in rawResources"><button type="button" class="btn btn-default" data-ng-click="addResource(i)">{{ i.name }}</button> </span>
-                </div>
-              </modal>
+            <div class="panel panel-primary" id="library-panel" data-ng-controller="sc.app.library">
               <div class="panel-body">
                 <div style="text-align: right;">
                   <button type="button" class="btn btn-default" data-ng-click="stopPreview()" data-ng-show="itemPreviewing">
@@ -82,8 +74,8 @@
                          data-ng-attr-context-menu="partials/library-context.html" data-ng-model="i">
                       <div class="item-name">{{ i.name }}</div><canvas data-draw-audio data-ng-attr-audio-buffer="i.buffer"></canvas>
                     </div>
-                    <div data-ng-class="{'item-previewing': i.previewing}" data-ng-if="i.type == 'fade'">
-                      Fade Control
+                    <div data-ng-class="{'item-previewing': i.previewing}" data-ng-if="i.type == 'audio-control'">
+                      Audio Control
                     </div>
                   </div>
                 </div>
@@ -107,8 +99,10 @@
                           <td class="cue-handle"></td>
                           <td id="master-cell">
                             <h3 id="running-cue">{{ cueEngine.cues[cueEngine.current].description }}</h3>
-                            <button type="button" class="btn btn-success btn-lg" data-ng-click="go()" title="Space"><span class="glyphicon glyphicon-play"></span> Go</button>
-                            <button type="button" class="btn btn-default btn-lg" data-ng-click="stop()" title="Esc"><span class="glyphicon glyphicon-stop"></span> Stop</button>
+                            <div class="btn-group" role="group">
+                              <button type="button" class="btn btn-success btn-lg" data-ng-click="go()" title="Space" data-ng-class="{'active': cueEngine.running}"><span class="glyphicon glyphicon-play"></span> Go</button>
+                              <button type="button" class="btn btn-default btn-lg" data-ng-click="stop()" title="Esc"><span class="glyphicon glyphicon-stop"></span> Stop</button>
+                            </div>
                           </td>
                           <td class="channel" data-ng-repeat="i in channels">
                           </td>
@@ -120,7 +114,7 @@
                 <bg-pane data-ng-attr-min-size="50">
                   <!-- Cue Sheet -->
                   <div class="panel panel-warning" id="cuesheet-cell">
-                    <table class="cuesheet" id="cuesheet">
+                    <table class="cuesheet no-select" id="cuesheet">
                       <colgroup>
                         <col>
                         <col>
@@ -143,9 +137,8 @@
                         </tr>
                       </thead>
                       <tbody data-as-sortable="cueDragOptions" data-ng-model="cues">
-                        <tr class="cue" data-ng-repeat="c in cues"
-                            data-ng-dblclick="setCurrentAt($index)"
-                            data-ng-class="{'current': engine.current == $index}"
+                        <tr class="cue" data-ng-repeat="c in cues" data-ng-dblclick="setCurrentAt($index)"
+                            data-ng-class="{'current': engine.current == $index, 'cue-go-with-next': c.goWithNext}"
                             data-scroll-into-view-if="engine.current == $index"
                             data-as-sortable="cueItemDragOptions" data-ng-model="c.items"> <!--  data-as-sortable-item data-as-sortable-item-up -->
                           <td class="cue-handle"></td> <!--  data-as-sortable-item-handle -->
@@ -153,11 +146,19 @@
                               data-ng-attr-context-menu="partials/cue-context.html">
                             <span data-buttons="no" data-blur="submit" data-editable-text="c.description">{{ c.description }}</span>
                           </td>
-                          <td data-ng-repeat="i in c.items" data-as-sortable-item>
-                            <div data-ng-attr-context-menu="partials/cue-item-context.html" class="cue-item">
-                              <div data-as-sortable-item-handle 
-                                   class="cue-item" data-ng-class="{'cue-item-audio': i.type == 'audio', 'cue-item-html': i.type == 'html'}">
+                          <td data-ng-repeat="i in c.items" data-as-sortable-item data-ng-dblclick="configureCueItem(c, $index)">
+                            <div class="cue-item">
+                              <div data-as-sortable-item-handle class="cue-item cue-item-audio" data-ng-if="i.type == 'audio'">
                                 {{ i.name || '' }}
+                              </div>
+                              <div data-as-sortable-item-handle class="cue-item cue-item-audio-control" data-ng-if="i.type == 'audio-control'">
+                                [Audio]
+                              </div>
+                              <div data-as-sortable-item-handle class="cue-item cue-item-html" data-ng-if="i.type == 'html'">
+                                {{ i.name || '' }}
+                              </div>
+                              <div data-as-sortable-item-handle class="cue-item cue-item-html-control" data-ng-if="i.type == 'html-control'">
+                                [HTML]
                               </div>
                             </div>
                           </td>
@@ -173,7 +174,6 @@
       </div>
     </td></tr>
   </table>
-  
   </body>
 </html>
 

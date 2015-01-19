@@ -1,0 +1,37 @@
+<div class="modal-header"> 
+  <h3 class="modal-title">Audio Time Picker</h3> 
+</div> 
+<div class="modal-body">
+  <form class="form-inline">
+    <div class="form-group">
+      <label>
+        Zoom <input type="range" data-ng-model="widthRatio" max="50" min="1" step="0.1" data-ng-model-options="{ debounce: 100 }"/>
+      </label>
+    </div>
+    <div class="form-group" style="margin-left: 20px">
+      <label>Duration: </label> {{ target.buffer.duration | number:2 }}
+    </div>
+    <div class="form-group" style="margin-left: 20px">
+      <div ng-if="graphPicks.length == 1"><label>Point: </label> 
+        {{ graphPicks[0] == null ? 'N/A' : (graphPicks[0] | number:2) }}
+      </div>
+      <div ng-if="graphPicks.length == 2"><label>Range: </label> 
+        {{ graphPicks[0] == null ? 'N/A' : (graphPicks[0] | number:2) }} to {{ graphPicks[1] == null ? 'N/A' : (graphPicks[1] | number:2) }}
+        <span ng-if="graphPicks[0] != null && graphPicks[1] != null">
+          for {{ graphPicks[1] - graphPicks[0] | number:2 }}
+        </span>
+      </div>
+    </div>
+  </form>
+  <div style="overflow: auto; position: relative;">
+    <canvas data-draw-audio data-ng-attr-audio-buffer="target.buffer" height="200" style="height: 200px; background: black;" data-ng-attr-width-ratio="widthRatio">
+    </canvas>
+    <canvas data-draw-picker height="200" style="height: 200px; position: absolute; left:0; top: 0; " 
+      data-ng-attr-picks="graphPicks" data-ng-attr-duration="target.buffer.duration" data-ng-attr-width-ratio="widthRatio">
+    </canvas>
+    <div style="position: absolute; left: 0; top: 0; margin: 5px; color: blue">Cursor: {{ graphCursorTime | number:2 }}</div>
+  </div>
+</div>
+<div class="modal-footer">
+  <button class="btn btn-primary" data-ng-click="$close(30)">Ok</button>
+</div> 

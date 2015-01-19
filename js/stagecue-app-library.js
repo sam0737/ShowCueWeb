@@ -1,5 +1,5 @@
-angular.module("stageCue").controller("sc.app.library", ['$scope', '$q', 'sc.audio', 'sc.library', 'sc.cueEngine', 
-function ($scope, $q, audio, library, cueEngine) {
+angular.module("stageCue").controller("sc.app.library", ['$scope', '$q', 'sc.audio', 'sc.library', 'sc.cueEngine', '$modal',
+function ($scope, $q, audio, library, cueEngine, $modal) {
   $scope.rawResources = library.rawResources;
   $scope.items = library.items;
   $scope.libraryDragOptions = {
@@ -11,11 +11,22 @@ function ($scope, $q, audio, library, cueEngine) {
     }
   }
 
-  $scope.addLibraryLoading = false;
-  $scope.isAddResourceVisible = false;
+  var modal;
   $scope.showAddResource = function() {
     audio.stopPreview();
-    $scope.isAddResourceVisible = true; 
+    modal = $modal.open({
+      templateUrl: 'partials/add-resource-modal.html',
+      scope: $scope,
+    });
+  };
+
+  $scope.addResource = function(resource)
+  {
+    $scope.isAddResourceLoading = true;
+    $q.when(library.addResource(resource)).finally(function() { 
+      $scope.isAddResourceLoading = false;
+      modal.close();
+    });
   };
 
   $scope.itemPreviewing = 0;
@@ -36,15 +47,6 @@ function ($scope, $q, audio, library, cueEngine) {
         if (item.previewing > 0) item.previewing--; 
       });
     }); 
-  };
-  
-  $scope.addResource = function(resource)
-  {
-    $scope.isAddResourceLoading = true;
-    $q.when(library.addResource(resource)).finally(function() { 
-      $scope.isAddResourceLoading = false;
-      $scope.isAddResourceVisible = false;
-    });
   };
   
   $scope.addToCueSheet = function (item)

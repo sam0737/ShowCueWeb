@@ -47,13 +47,24 @@ angular.module("stageCue").service("sc.audio", function () {
 
     clip.source.connect(clip.gain);
     clip.gain.connect(channel.masterGain);
-    clip.gain.value = 1;
+    clip.gain.gain.value = config.gain != null ? config.gain : 1;
+    clip.config = config;
+    if (config.loop[0] != null && config.loop[1] != null) {
+      clip.source.loop = true;
+      clip.source.loopStart = config.loop[0];
+      clip.source.loopEnd = config.loop[1];
+    } else {
+      clip.source.loop = false;
+    }
     clip.source.start(
-      config.delay || 0,
-      config.offset || 0,
-      config.duration || clip.source.buffer.duration - (config.offset || 0)
+      config.delay != null ? config.delay : 0,
+      config.range[0] != null ? config.range[0] : 0,
+      config.range[1] && config.range[0] != null ?
+        config.range[1] - config.range[0] : 
+        clip.source.buffer.duration - (config.range[0] || 0)
     );
-    if (channel.currentClip) {
+    if (channel.currentClip && 
+        (!channel.currentClip.config || !channel.currentClip.config.allowOverlap)) {
       channel.currentClip.source.stop();
     }
     channel.playingClips.push(clip);

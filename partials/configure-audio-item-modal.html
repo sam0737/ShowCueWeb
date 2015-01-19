@@ -1,0 +1,70 @@
+<div class="modal-header"> 
+  <h3 class="modal-title">Configure Audio</h3> 
+</div> 
+<form class="form-horizontal" name="configForm" data-ng-submit="configForm.$valid && $close()">
+  <ng-include src="'partials/configure-cue-partials.html'"></ng-include>
+  <div class="modal-body">
+    <div class="form-group" data-ng-class="{'has-error': configForm.gain.$invalid}">
+      <label for="configGain" class="col-sm-2 control-label">Gain</label>
+      <div class="col-sm-10">
+        <input type="text" class="form-control input-sm" id="configGain" placeholder="Blank for default" name="gain"
+          data-cuefloat data-ng-model="config.gain">
+      </div>
+    </div>
+    <div class="form-group" data-ng-class="{'has-error': configForm.delay.$invalid}">
+      <label for="configDelay" class="col-sm-2 control-label">Delay</label>
+      <div class="col-sm-10 form-inline">
+        <input type="text" class="form-control input-sm" id="configDelay" name="delay" placeholder="Blank for default"
+          data-cuefloat data-ng-model="config.delay">
+        </span>
+      </div>
+    </div>
+    <div class="form-group" data-ng-class="{'has-error': configForm.rangeStart.$invalid || configForm.rangeEnd.$invalid}"
+         data-buffer-time-picker data-ng-model="config.range">
+      <label for="configRangeStart" class="col-sm-2 control-label">Range</label>
+      <div class="col-sm-10">
+        <div class=" form-inline">
+        <div class="input-group input-group-sm">
+          <input type="text" class="form-control input-sm" id="configRangeStart" name="rangeStart" placeholder="Start; Blank to disable"
+            data-cuefloat data-ng-model="picks[0]">
+          <input type="text" class="form-control input-sm" id="configRangeEnd" name="rangeEnd" placeholder="End; Blank to disable"
+            data-cuefloat data-ng-model="picks[1]">
+          <span class="input-group-btn">
+            <button class="btn btn-default btn-sm" type="button" data-ng-click="$pick()"><span class="glyphicon glyphicon-time"></span></button>
+          </span>
+        </div>
+      </div>
+      </div>
+    </div>
+    <div class="form-group" data-ng-class="{'has-error': configForm.loopStart.$invalid || configForm.loopEnd.$invalid}"
+         data-buffer-time-picker data-ng-model="config.loop">
+      <label for="configLoopStart" class="col-sm-2 control-label">Loop</label>
+      <div class="col-sm-10 form-inline">
+        <div class="input-group">
+          <input type="text" class="form-control input-sm" id="configLoopStart" name="loopStart" placeholder="Start; Blank to disable"
+            data-cuefloat data-ng-model="picks[0]">
+          <input type="text" class="form-control input-sm" id="configLoopEnd" name="loopEnd" placeholder="End; Blank to disable"
+            data-cuefloat data-ng-model="picks[1]">
+          <span class="input-group-btn">
+            <button class="btn btn-default btn-sm" type="button" data-ng-click="$pick()"><span class="glyphicon glyphicon-time"></span></button>
+          </span>
+        </div>
+      </div>
+    </div>
+    <div class="form-group">
+      <div class="col-sm-offset-2 col-sm-10">
+        <div class="checkbox">
+          <label>
+            <input type="checkbox" id="configAllowOverlap" data-ng-model="config.allowOverlap">
+            Allow overlap?
+          </label>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <input type="submit" class="btn btn-primary" value="Ok" data-ng-disabled="!configForm.$valid">
+  </div>
+</form>
+
+
