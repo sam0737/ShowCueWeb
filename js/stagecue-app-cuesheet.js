@@ -36,11 +36,8 @@ function ($scope, $q, cueEngine, $document, $modal, $modalStack) {
       cueEngine.flush();
     }
   };
-  $scope.addAudioChannel = function addAudioChannel() {
-    cueEngine.addChannel(new AudioChannel());
-  };
-  $scope.addHtmlChannel = function addHtmlChannel() {
-    cueEngine.addChannel(new HtmlChannel());
+  $scope.addShowChannel = function addShowChannel() {
+    cueEngine.addChannel(new ShowChannel());
   };
   $scope.setCurrentAt = function setCurrentAt(index) {
     cueEngine.setCurrentAt(index);
@@ -87,6 +84,46 @@ function ($scope, $q, cueEngine, $document, $modal, $modalStack) {
         return;
       }
     }
+  };
+
+  $scope.configureChannel = function configureChannel(channel) {
+    if (cueEngine.running) return;
+
+    $scope.target = channel;
+    var c = $scope.config = channel.persist();
+    c.screen = channel.screen;
+
+    $modal.open({
+      templateUrl: 'partials/configure-' + channel.type + '-channel-modal.html',
+      scope: $scope
+    }).result.then(function () { 
+      channel.thaw(c, cueEngine.screens); 
+      cueEngine.reapplyChannels(); 
+      cueEngine.flush(); 
+    });
+  };
+
+  $scope.newScreenForChannel = function newScreenForChannel() {
+    var screen = new Screen();
+    $scope.configureScreen(screen).then(function () {
+      cueEngine.addScreen(screen);
+      $scope.config.screen = screen;
+      $scope.config.screenId = screen.id;
+    });
+  };
+
+  $scope.configureScreen = function configureScreen(screen) {
+    return $modal.open({
+      templateUrl: 'partials/configure-screen-modal.html',
+      controller: 'sc.app.configure.screen',
+      resolve: {
+        screen: function() { return screen; }
+      }
+    }).result.then(function () {
+      cueEngine.reapplyChannels(); 
+      cueEngine.flush(); 
+      return screen;
+    });      
   };
 
   $scope.configureCueItem = function configureCueItem(cue, itemIndex) {
@@ -165,3 +202,13 @@ function ($scope, $q, cueEngine, $document, $modal, $modalStack) {
   });
 }]);
 
+angular.module("stageCue").controller("sc.app.configure.screen", ['$scope', '$modalInstance', 'screen',
+function ($scope, $modalInstance, screen) {
+  $scope.target = screen;
+  $scope.config = screen.persist();
+
+  $scope.ok = function () {
+    screen.thaw($scope.config); 
+    $modalInstance.close();
+  };
+}]);

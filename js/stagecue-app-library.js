@@ -58,6 +58,8 @@ function ($scope, $q, audio, library, cueEngine, $modal) {
   };
 
   $scope.preview = function(item) { 
+    if (!(item instanceof AudioItem))
+      return;
     $scope.itemPreviewing++;
     item.previewing++;
     audio.preview(item, function() { 

@@ -1,0 +1,38 @@
+<div class="modal-header"> 
+  <h3 class="modal-title">Configure Show Channel</h3> 
+</div> 
+<form class="form-horizontal" name="configForm" data-ng-submit="configForm.$valid && $close()">
+  <div class="modal-body">
+    <div class="form-group">
+      <label for="configScreen" class="col-sm-2 control-label">Screen</label>
+      <div class="col-sm-10">
+        <div class="btn-group" dropdown>
+          <button type="button" class="btn btn-default dropdown-toggle" id="configScreen" dropdown-toggle>
+            {{ config.screen ? config.screen.name : 'N/A' }}
+            <span class="caret"></span>
+          </button>
+          <ul class="dropdown-menu" role="menu">
+            <li data-ng-repeat="s in cueEngine.screens"><a href="#" data-ng-click="config.screenId = s.id; config.screen = s">{{ s.name }}</a></li>
+            <li data-ng-if="cueEngine.screens.length < cueEngine.channels.length">
+              <a href="#" data-ng-click="newScreenForChannel()">New Screen...</a>
+            </li>
+          </ul>
+        </div>
+        <button data-ng-if="config.screen" type="button" class="btn btn-info" data-ng-click="configureScreen(config.screen)">Configure...</button>
+      </div>
+    </div>
+    <div class="form-group" data-ng-class="{'has-error': configForm.masterGain.$invalid}">
+      <label for="configFadeTo" class="col-sm-2 control-label">Master Gain</label>
+      <div class="col-sm-10">
+        <input type="text" class="form-control input-sm" id="configFadeTo" placeholder="Blank for default" name="masterGain"
+          data-cuefloat data-ng-model="config.masterGain">
+      </div>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <input type="submit" class="btn btn-primary" value="Ok" data-ng-disabled="!configForm.$valid">
+  </div>
+</form>
+
+
+

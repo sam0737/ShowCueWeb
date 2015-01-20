@@ -1,7 +1,37 @@
 var $audio;
+var $visual;
 var $userConfig;
 var $library;
 var $rootScope;
+
+function Screen()
+{
+  this.id = Math.floor((1 + Math.random()) * 0x100000000).toString(16).substring(1);
+  this.name = 'New Screen';
+  this.transform = '';
+  this.screenWidth = 0;
+  this.screenHeight = 0;
+  this.width = 0;
+  this.height = 0;
+  this.left = 0;
+  this.top = 0;
+  this.background = '#000000';
+}
+
+Screen.prototype.extendedProperties = ['id','name','transform','screenWidth','screenHeight','width','height','left','top','background'];
+Screen.prototype.persist = function persist() {
+  var c = {};
+  this.extendedProperties.forEach(function (key) {
+    c[key] = angular.copy(this[key]);
+  }, this);
+  return c;
+};
+
+Screen.prototype.thaw = function thaw(v) {
+  this.extendedProperties.forEach(function (key) {
+    if (v[key] != null) this[key] = v[key];
+  }, this);
+};
 
 function CueConfig()
 {
@@ -50,11 +80,26 @@ function AudioControlCueConfig()
   this.fadeRange = [null, null];
 }
 
+VideoCueConfig.prototype = new CueConfig();
+VideoCueConfig.prototype.constructor = AudioCueConfig;
+VideoCueConfig.prototype.type = 'video';
+VideoCueConfig.prototype.extendedProperties = ['gain','allowOverlap','loop','range','delay'];
+function VideoCueConfig()
+{
+  CueConfig.prototype.constructor.apply(this);  
+  this.gain = null;
+  this.delay = null;
+  this.range = [null, null];
+  this.loop = [null, null];
+  this.allowOverlap = false;
+}
+
 CueConfig.thawItems = function thawItems(values) {
-  return StageCue.thawItemsByType(values, [AudioCueConfig, AudioControlCueConfig]);
+  return StageCue.thawItemsByType(values, [AudioCueConfig, AudioControlCueConfig, VideoCueConfig]);
 };
 
 Channel.prototype.type = null;
+Channel.prototype.extendedProperties = ['type', 'name'];
 function Channel()
 {
   this.id = Math.floor((1 + Math.random()) * 0x100000000).toString(16).substring(1);
@@ -62,30 +107,50 @@ function Channel()
 }
 
 Channel.prototype.persist = function persist() {
-  return { name: this.name, type: this.type };
+  var c = {};
+  this.extendedProperties.forEach(function (key) {
+    c[key] = angular.copy(this[key]);
+  }, this);
+  return c;
 };
+
 Channel.prototype.thaw = function thaw(v) {
-  this.name = v.name;
+  this.extendedProperties.forEach(function (key) {
+    if (v[key] != null) this[key] = v[key];
+  }, this);
 };
 
-AudioChannel.prototype = new Channel();
-AudioChannel.prototype.constructor = AudioChannel;
-AudioChannel.prototype.type = 'audio';
-function AudioChannel()
+ShowChannel.prototype = new Channel();
+ShowChannel.prototype.constructor = ShowChannel;
+ShowChannel.prototype.type = 'show';
+ShowChannel.prototype.extendedProperties = 
+  Channel.prototype.extendedProperties.concat(['masterGain']);
+
+function ShowChannel()
 {
   Channel.prototype.constructor.apply(this);  
+  this.masterGain = null;
+  this.screen = null;
 }
+ShowChannel.prototype.persist = function persist() {
+  var c = Channel.prototype.persist.call(this);  
+  if (this.screen) {
+    c.screenId = this.screen.id;
+    c.screenName = this.screen.name;
+  }
+  return c;
+};
 
-HtmlChannel.prototype = new Channel();
-HtmlChannel.prototype.constructor = HtmlChannel;
-HtmlChannel.prototype.type = 'html';
-function HtmlChannel()
-{
-  Channel.prototype.constructor.apply(this);  
-}
+ShowChannel.prototype.thaw = function thaw(v, screens) {
+  Channel.prototype.thaw.call(this, v);  
+  if (v.screenId != null)
+  {
+    this.screen = StageCue.arrayFind.call(screens, function (s) { return s.id == v.screenId; });
+  }
+};
 
-Channel.thawItems = function thawItems(values) {
-  return StageCue.thawItemsByType(values, [AudioChannel, HtmlChannel]);
+Channel.thawItems = function thawItems(values, screens) {
+  return StageCue.thawItemsByType(values, [ShowChannel], screens);
 };
 
 Cue.GO_NORMAL = 0;
@@ -164,10 +229,11 @@ Cue.prototype.removeChannelAt = function removeChannelAt(index)
   this.configs.splice(index, 1);
 };
 
-function CueEngine(audio, userConfig, library, rootScope)
+function CueEngine(audio, visual, userConfig, library, rootScope)
 {
   $library = library;
   $audio = audio;
+  $visual = visual;
   $userConfig = userConfig;
   $rootScope = rootScope;
   userConfig.onPersist('cueEngine', this.persist, this);
@@ -176,11 +242,20 @@ function CueEngine(audio, userConfig, library, rootScope)
   this.current = -1;
   this.running = false;
   this.runningEra = 0;
+
   this.cues = [];
   this.channels = [];
+  this.screens = [];
+
   this.loaded = false;
-  this.addChannel(new AudioChannel());
+  this.addChannel(new ShowChannel());
 }
+
+CueEngine.prototype.addScreen = function addScreen(screen)
+{
+  this.screens.push(screen)
+  this.flush();
+};
 
 CueEngine.prototype.addChannel = function addChannel(channel)
 {
@@ -189,11 +264,22 @@ CueEngine.prototype.addChannel = function addChannel(channel)
   this.channels.push(channel);
   
   $audio.addChannel(channel);
+  $visual.addChannel(channel);
 
   this.cues.forEach(function (cue) {
     cue.addChannel();
   });
   this.flush();
+};
+
+CueEngine.prototype.reapplyChannels = function reapplyChannels(channel)
+{
+  for (var i = 0; i < this.channels.length; i++)
+  {
+    var channel = this.channels[i];
+    $audio.addChannel(channel);
+    $visual.addChannel(channel);
+  }
 };
 
 CueEngine.prototype.removeChannelAt = function removeChannelAt(index)
@@ -203,6 +289,7 @@ CueEngine.prototype.removeChannelAt = function removeChannelAt(index)
   var channel = channels[0];
 
   $audio.removeChannel(channel);
+  $visual.removeChannel(channel);
 
   this.cues.forEach(function (cue) {
     cue.removeChannelAt(index);
@@ -349,9 +436,8 @@ CueEngine.prototype.stop = function stop()
   for (var i = 0; i < this.channels.length; i++)
   {
     var channel = this.channels[i];
-    if (channel instanceof AudioChannel) {
-      $audio.stop(channel);
-    }
+    $audio.stop(channel);
+    $visual.stop(channel);
   }
 };
 
@@ -364,6 +450,7 @@ CueEngine.prototype.flush = function flush()
 CueEngine.prototype.persist = function persist() {
   var result =
     {
+      screens: this.screens.map(function (i) { return i.persist(); }),
       channels: this.channels.map(function (i) { return i.persist(); }),
       cues: this.cues.map(function (i) { return i.persist(); })
     };
@@ -377,20 +464,25 @@ CueEngine.prototype.thaw = function thaw(v)
 
   var libraryItemMap = this.getLibraryItemMap();
 
+  this.screens.splice(0);
+  this.screens.push.apply(this.screens, (v.screens || []).map(function (i) {
+    var screen = new Screen();
+    screen.thaw(i);
+    return screen;
+  }));
+
   this.channels.splice(0);
-  this.cues.splice(0);
-  var newChannels = Channel.thawItems(v.channels);
+  var newChannels = Channel.thawItems(v.channels || [], this.screens);
   this.channels.push.apply(this.channels, newChannels);
-  for (var i = 0; i < newChannels.length; i++)
-  {
-    var channel = newChannels[i];
-    $audio.addChannel(channel);
-  }
+  this.reapplyChannels();
+  
+  this.cues.splice(0);
   this.cues.push.apply(this.cues, v.cues.map(function (i) {
     var item = new Cue(); 
     item.thaw(i, libraryItemMap); 
     return item; 
   }));
+
   this.setCurrentAt(0);
 };
 
@@ -401,4 +493,4 @@ CueEngine.prototype.getLibraryItemMap = function getLibraryItemMap(v)
   return libraryItemMap;
 }
 
-angular.module("stageCue").service("sc.cueEngine", ['sc.audio', 'sc.userConfig', 'sc.library', '$rootScope', CueEngine]);
+angular.module("stageCue").service("sc.cueEngine", ['sc.audio', 'sc.visual', 'sc.userConfig', 'sc.library', '$rootScope', CueEngine]);

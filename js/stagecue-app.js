@@ -3,6 +3,7 @@ var stage = angular.module("stageCue", ["ui.sortable", 'bgDirectives', 'ngContex
 var StageCue = StageCue || {};
 StageCue.thawItemsByType = function thawItemsByType(values, types) {
   var typeMap = [];
+  var remainingArguments = Array.prototype.slice.call(arguments, 2);
   types.forEach(function (i) { typeMap[i.prototype.type] = i; });
   var results = 
     values
@@ -10,7 +11,7 @@ StageCue.thawItemsByType = function thawItemsByType(values, types) {
       .map(function (v) { 
         if (!('type' in v)) return {};
         var item = new typeMap[v.type];
-        item.thaw(v);
+        item.thaw.apply(item, [v].concat(remainingArguments));
         return item;
       });
   return results;

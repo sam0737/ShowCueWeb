@@ -132,7 +132,7 @@ ul.menu li:hover {
 }
 
 .cuesheet tr, #cuesheet tr td {
-  height: 40px;
+  height: 25px;
   position: relative;
 }
 
@@ -141,15 +141,9 @@ ul.menu li:hover {
               inset 0 -8px 8px -8px rgba(0,0,0,0.5)
 }
 
-#cuesheet tr.cue-go-with-next td {
+#cuesheet tr.cue-go-with-next td, #cuesheet tr.cue-go-after-this td {
   /* Top only */
   box-shadow: inset 0 8px 8px -8px rgba(255,255,255,0.2)
-}
-
-#cuesheet tr.cue-go-after-this td {
-  /* Top and soft bottom */
-  box-shadow: inset 0 8px 8px -8px rgba(255,255,255,0.2),
-              inset 0 -3px 3px -3px rgba(235, 255, 112, 0.41);
 }
 
 #cuesheet tr.cue-go-with-next + tr.cue-go-with-next td, #cuesheet tr.cue-go-after-this + tr.cue-go-with-next td {
@@ -157,7 +151,7 @@ ul.menu li:hover {
 }
 
 #cuesheet tr.cue-go-with-next + tr.cue-go-after-this td, #cuesheet tr.cue-go-after-this + tr.cue-go-after-this td {
-  box-shadow: inset 0 -3px 3px -3px rgba(235, 255, 112, 0.41);
+  box-shadow: none;
 }
 
 #cuesheet tr.cue-go-with-next + tr td, #cuesheet tr.cue-go-after-this + tr td {
@@ -169,17 +163,22 @@ ul.menu li:hover {
   padding: 0 5px;
 }
 
-.cuesheet col.channel {
+.cuesheet th.channel div {
+  max-width: 75px;
+}
+
+.cuesheet .channel {
   border-left: 1px solid rgb(50, 50, 50);
-  width: 125px;
+  width: 75px;
 }
 
-.cuesheet col.channel-audio {
+.cuesheet col.channel-tail {
   background: rgba(42, 159, 214, 0.15);
+  width: 250px;
 }
 
-.cuesheet col.channel-html {
-  background: rgba(226, 83, 1, 0.15);
+.cuesheet col.channel-show {
+  background: rgba(42, 159, 214, 0.15);
 }
 
 .cuesheet #cuesheet-add-channel {
@@ -197,18 +196,20 @@ ul.menu li:hover {
   right: 10px;
 }
 
-.cuesheet .cue-item .cue-properties {
+.cue-item .cue-properties {
   opacity: 0.5;
   position: absolute;
   right: 1px;
-  bottom: 2px;
 }
 
-.cuesheet .cue-item {
+.cue-item {
   height: 100%;
-  width: 100%;
-  position: relative;
-  word-break: break-all;
+  width: 250px;
+  position: absolute;
+  white-space: nowrap;
+  overflow: hidden;
+  top: 0;
+  left: 0;
 }
   
 .cuesheet .cue-handle {
@@ -229,7 +230,7 @@ ul.menu li:hover {
   background: rgba(42, 159, 214, 0.35);
 }
 
-.cue-item-html, .cue-item-html-control {
+.cue-item-html, .cue-item-video, .cue-item-visual-control {
   background: rgba(226, 83, 1, 0.35);
 }
 
@@ -243,6 +244,23 @@ ul.menu li:hover {
 
 #master .cue-handle {
   background: rgba(42, 159, 214, 0.5); 
+}
+
+#standby-cue {
+  border: 1px solid white;
+  line-height: 50px;
+  height: 50px;
+  font-size: 40px;
+  padding: 0 10px;
+}
+
+#running-cue {
+  opacity: 0.5;
+  border: 1px solid gray;
+  line-height: 50px;
+  height: 50px;
+  font-size: 40px;
+  padding: 0 10px;
 }
 
 .modal-body {

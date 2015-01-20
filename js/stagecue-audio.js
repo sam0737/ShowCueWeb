@@ -134,14 +134,17 @@ angular.module("stageCue").service("sc.audio", ['$q', function ($q) {
 
   this.addChannel = function addChannel(channel)
   {
+    if (!(channel instanceof ShowChannel)) return;
+
     var c = channelNodes[channel.id] = 
+    channelNodes[channel.id] ||
     {
       playingClips: [],
       currentClip: null,
       masterGain: a.createGain()
     };
     c.masterGain.connect(a.destination);
-    c.masterGain.gain.value = 1;
+    c.masterGain.gain.value = channel.masterGain != null ? channel.masterGain : 1;
   };
 
   this.removeChannel = function removeChannel(channel)

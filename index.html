@@ -28,6 +28,7 @@
     <script src="js/stagecue-userconfig.js"></script>
     <script src="js/stagecue-library.js"></script>
     <script src="js/stagecue-audio.js"></script>
+    <script src="js/stagecue-visual.js"></script>
     <script src="js/workspace-loader.js"></script>
   </head>
   <body>
@@ -75,8 +76,15 @@
                          data-ng-attr-context-menu="partials/library-context.html" data-ng-model="i">
                       <div class="item-name">{{ i.name }}</div><canvas data-draw-audio data-ng-attr-audio-buffer="i.buffer"></canvas>
                     </div>
+                    <div data-ng-class="{'item-previewing': i.previewing}" data-ng-if="i.type == 'video'"
+                         data-ng-attr-context-menu="partials/library-context.html" data-ng-model="i">
+                      <div class="item-name">{{ i.name }}</div>
+                    </div>
                     <div data-ng-class="{'item-previewing': i.previewing}" data-ng-if="i.type == 'audio-control'">
                       Audio Control
+                    </div>
+                    <div data-ng-class="{'item-previewing': i.previewing}" data-ng-if="i.type == 'visual-control'">
+                      Visual Control
                     </div>
                   </div>
                 </div>
@@ -93,19 +101,20 @@
                       <colgroup>
                         <col>
                         <col>
-                        <col class="channel" data-ng-repeat="i in channels" data-ng-class="{'channel-audio': i.type == 'audio', 'channel-html': i.type == 'html'}">
                       </colgroup>
                       <tbody>
                         <tr>
                           <td class="cue-handle"></td>
                           <td id="master-cell">
-                            <h3 id="running-cue">{{ cueEngine.cues[cueEngine.current].description }}</h3>
+                            <h1 id="running-cue">{{ cueEngine.running ? cueEngine.cues[cueEngine.current].description : '' || '' }}</h1>
                             <div class="btn-group" role="group">
                               <button type="button" class="btn btn-success btn-lg" data-ng-click="go()" title="Space" data-ng-class="{'active': cueEngine.running}"><span class="glyphicon glyphicon-play"></span> Go</button>
                               <button type="button" class="btn btn-default btn-lg" data-ng-click="stop()" title="Esc"><span class="glyphicon glyphicon-stop"></span> Stop</button>
                             </div>
-                          </td>
-                          <td class="channel" data-ng-repeat="i in channels">
+                            <h2 id="standby-cue">{{ 
+                              !cueEngine.cues[cueEngine.current] || (cueEngine.cues[cueEngine.current].goMode != 0 && cueEngine.running) ? '' :
+                              (cueEngine.cues[cueEngine.current + (cueEngine.running ? 1 : 0)].description  || '')
+                              }}</h2>
                           </td>
                         </tr>
                       </tbody>
@@ -119,22 +128,25 @@
                       <colgroup>
                         <col>
                         <col>
-                        <col class="channel" data-ng-repeat="i in channels" data-ng-class="{'channel-audio': i.type == 'audio', 'channel-html': i.type == 'html'}">
+                        <col class="channel" data-ng-repeat="i in channels" data-ng-class="{'channel-show': i.type == 'show'}">
+                        <col class="channel-tail">
                       </colgroup>
                       <thead>
                         <tr data-as-sortable="channelDragOptions" data-ng-model="channels">
                           <th class="cue-handle"></th>
                           <th>
                             Cue
-                            <button type="button" class="btn btn-default btn-xs" data-ng-click="addAudioChannel()"><span class="glyphicon glyphicon-plus"></span> Audio</button>
-                            <button type="button" class="btn btn-default btn-xs" data-ng-click="addHtmlChannel()"><span class="glyphicon glyphicon-plus"></span> HTML</button>
+                            <button type="button" class="btn btn-default btn-xs" data-ng-click="addShowChannel()"><span class="glyphicon glyphicon-plus"></span> Channel</button>
                           </th>
                           <th class="channel" data-ng-repeat="i in channels" 
                               data-as-sortable-item 
                               data-ng-attr-context-menu="partials/channel-context.html"
-                              data-ng-class="{'channel-audio': i.type == 'audio', 'channel-html': i.type == 'html'}">
-                            <span data-buttons="no" data-blur="submit" data-editable-text="i.name" data-onaftersave="flush()" data-as-sortable-item-handle>{{ i.name || '...' }}</span>                              
+                              data-ng-class="{'channel-show': i.type == 'show'}"
+                              data-ng-dblclick="configureChannel(i)"
+                              >
+                            <div data-buttons="no" data-blur="submit" data-editable-text="i.name" data-onaftersave="flush()" data-as-sortable-item-handle>{{ i.name || '...' }}</div>
                           </th>
+                          <th class="channel-tail"></th>
                         </tr>
                       </thead>
                       <tbody data-as-sortable="cueDragOptions" data-ng-model="cues">
@@ -151,9 +163,9 @@
                               <span data-ng-If="c.goMode == 2" class="glyphicon glyphicon-chevron-down" title="Go after this"></span>
                             </span>
                           </td>
-                          <td data-ng-repeat="i in c.items" data-as-sortable-item data-ng-dblclick="configureCueItem(c, $index)">
+                          <td data-ng-repeat="i in c.items" data-as-sortable-item class="cue-item-cell">
                             {{ config = c.configs[$index]; '' }}
-                            <div class="cue-item no-select">
+                            <div class="cue-item no-select" data-ng-dblclick="configureCueItem(c, $index)">
                               <div data-as-sortable-item-handle class="cue-item cue-item-audio" data-ng-if="i.type == 'audio'">
                                 <span class="cue-properties">
                                   <span data-ng-If="config.gain != null" class="glyphicon glyphicon-sort" data-ng-attr-title="Gain set to {{config.gain}}"></span>
@@ -179,11 +191,15 @@
                               <div data-as-sortable-item-handle class="cue-item cue-item-html" data-ng-if="i.type == 'html'">
                                 {{ i.name || '' }}
                               </div>
-                              <div data-as-sortable-item-handle class="cue-item cue-item-html-control" data-ng-if="i.type == 'html-control'">
+                              <div data-as-sortable-item-handle class="cue-item cue-item-video" data-ng-if="i.type == 'video'">
+                                {{ i.name }}
+                              </div>
+                              <div data-as-sortable-item-handle class="cue-item cue-item-visual-control" data-ng-if="i.type == 'visual-control'">
                                 {{ i.name }}
                               </div>
                             </div>
                           </td>
+                          <td></td>
                         </tr>
                       </tbody>
                     </table>

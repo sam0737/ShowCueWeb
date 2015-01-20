@@ -9,6 +9,14 @@ function FileResource(fileEntry)
   this.name = fileEntry.name;
 };
 
+FileResource.prototype.readAsBlob = function readAsBlob() {
+  var def = $q.defer();
+  this.entry.file(function (file) {
+    def.resolve(file);
+  }, def.reject);
+  return def.promise;
+};
+
 FileResource.prototype.readAsAudioBuffer = function readAsAudioBuffer() {
   var def = $q.defer();
   this.entry.file(function (file) {
@@ -58,7 +66,7 @@ LibraryItem.prototype.thaw = function thaw(v) {
 };
 
 LibraryItem.thawItems = function thawItems(values) {
-  return StageCue.thawItemsByType(values, [AudioItem]);
+  return StageCue.thawItemsByType(values, [AudioItem, VideoItem]);
 };
 
 function MapToResources(fileEntries)
@@ -87,6 +95,23 @@ AudioItem.prototype.loadFromResource = function loadFromResource(resource) {
     .catch(function (result) { console.log('Failed to load as audio', resource.name, result); });
 };
 
+VideoItem.prototype = new LibraryItem();
+VideoItem.prototype.type = 'video';
+VideoItem.prototype.constructor = VideoItem;
+function VideoItem() {
+  LibraryItem.prototype.constructor.apply(this);  
+  this.previewing = false;
+};
+
+VideoItem.prototype.loadFromResource = function loadFromResource(resource) {
+  this.name = resource.name;
+  var item = this;
+
+  return $q.when(resource.readAsBlob())
+    .then(function (blob) { item.blob = blob; })
+    .catch(function (result) { console.log('Failed to load file', resource.name, result); });
+};
+
 AudioControlItem.prototype = new LibraryItem();
 AudioControlItem.prototype.type = 'audio-control';
 AudioControlItem.prototype.constructor = AudioControlItem;
@@ -97,8 +122,18 @@ function AudioControlItem(resource, callback) {
   this.isBuiltin = true;
 };
 
+VisualControlItem.prototype = new LibraryItem();
+VisualControlItem.prototype.type = 'visual-control';
+VisualControlItem.prototype.constructor = VisualControlItem;
+function VisualControlItem(resource, callback) {
+  LibraryItem.prototype.constructor.apply(this);  
+  this.name = '[Visual Control]';
+  this.id = '__visual-control';
+  this.isBuiltin = true;
+};
+
 function Library(audio, q, userConfig, cueEngine) {
-  this.items = [ new AudioControlItem() ];
+  this.items = [ new AudioControlItem(), new VisualControlItem() ];
   $audio = audio;
   $q = q;
   
@@ -185,7 +220,9 @@ Library.prototype.addResource = function (resource)
 {
   var library = this;
 
-  var i = new AudioItem();
+  var i = 
+    /\.(?:ogv|mp4|avi|webm|wbm|3gp)$/.test(resource.name) ? new VideoItem() :
+    new AudioItem();
   return $q.when(i.loadFromResource(resource)).then(function () {
     library.items.push(i);
     library.flush();
