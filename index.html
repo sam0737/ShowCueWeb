@@ -27,8 +27,7 @@
     <script src="js/stagecue-cueengine.js"></script>
     <script src="js/stagecue-userconfig.js"></script>
     <script src="js/stagecue-library.js"></script>
-    <script src="js/stagecue-audio.js"></script>
-    <script src="js/stagecue-visual.js"></script>
+    <script src="js/stagecue-renderer.js"></script>
     <script src="js/workspace-loader.js"></script>
   </head>
   <body>
@@ -72,19 +71,21 @@
                 <div class="list-group" data-as-sortable="libraryDragOptions" data-ng-model="items">
                   <div class="list-group-item library-item" data-ng-repeat="i in items" data-as-sortable-item data-ng-click="addToCueSheet(i)">
                     <div data-as-sortable-item-handle></div>                    
-                    <div data-ng-class="{'item-previewing': i.previewing}" data-ng-if="i.type == 'audio'"
-                         data-ng-attr-context-menu="partials/library-context.html" data-ng-model="i">
-                      <div class="item-name">{{ i.name }}</div><canvas data-draw-audio data-ng-attr-audio-buffer="i.buffer"></canvas>
-                    </div>
-                    <div data-ng-class="{'item-previewing': i.previewing}" data-ng-if="i.type == 'video'"
-                         data-ng-attr-context-menu="partials/library-context.html" data-ng-model="i">
-                      <div class="item-name">{{ i.name }}</div>
-                    </div>
-                    <div data-ng-class="{'item-previewing': i.previewing}" data-ng-if="i.type == 'audio-control'">
-                      Audio Control
-                    </div>
-                    <div data-ng-class="{'item-previewing': i.previewing}" data-ng-if="i.type == 'visual-control'">
-                      Visual Control
+                    <div data-ng-class="{'item-previewing': i.previewing}">
+                      <div data-ng-if="i.type == 'audio'"
+                           data-ng-attr-context-menu="partials/library-context.html" data-ng-model="i">
+                        <div class="item-name">{{ i.name }}</div><canvas data-draw-audio data-ng-attr-audio-buffer="i.buffer"></canvas>
+                      </div>
+                      <div data-ng-if="i.type == 'video' || i.type == 'html' || i.type == 'image'"
+                           data-ng-attr-context-menu="partials/library-context.html" data-ng-model="i">
+                        <div class="item-name">{{ i.name }}</div>
+                      </div>
+                      <div data-ng-if="i.type == 'audio-control'">
+                        Audio Control
+                      </div>
+                      <div data-ng-if="i.type == 'visual-control'">
+                        Visual Control
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -108,9 +109,10 @@
                           <td id="master-cell">
                             <h1 id="running-cue">{{ cueEngine.running ? cueEngine.cues[cueEngine.current].description : '' || '' }}</h1>
                             <div class="btn-group" role="group">
-                              <button type="button" class="btn btn-success btn-lg" data-ng-click="go()" title="Space" data-ng-class="{'active': cueEngine.running}"><span class="glyphicon glyphicon-play"></span> Go</button>
-                              <button type="button" class="btn btn-default btn-lg" data-ng-click="stop()" title="Esc"><span class="glyphicon glyphicon-stop"></span> Stop</button>
+                              <button type="button" class="btn btn-success btn-lg" data-ng-click="go()" tooltip="Space" data-ng-class="{'active': cueEngine.running}"><span class="glyphicon glyphicon-play"></span> Go</button>
+                              <button type="button" class="btn btn-default btn-lg" data-ng-click="stop()" tooltip="Esc"><span class="glyphicon glyphicon-stop"></span> Stop</button>
                             </div>
+                            <button type="button" class="btn btn-default btn-sm" data-ng-click="reapplyChannels()">Reload Screen</button>
                             <h2 id="standby-cue">{{ 
                               !cueEngine.cues[cueEngine.current] || (cueEngine.cues[cueEngine.current].goMode != 0 && cueEngine.running) ? '' :
                               (cueEngine.cues[cueEngine.current + (cueEngine.running ? 1 : 0)].description  || '')
@@ -188,13 +190,37 @@
                                 </span>
                                 {{ i.name }}
                               </div>
-                              <div data-as-sortable-item-handle class="cue-item cue-item-html" data-ng-if="i.type == 'html'">
+                              <div data-as-sortable-item-handle class="cue-item cue-item-video" data-ng-if="i.type == 'video'">
+                                <span class="cue-properties">
+                                  <span data-ng-If="config.allowOverlap" class="glyphicon glyphicon-pushpin" data-ng-attr-title="Allow overlap"></span>
+                                  <span data-ng-If="config.opacity != null" class="glyphicon glyphicon-eye-open" data-ng-attr-title="Initial opacity is {{config.opacity}}"></span>
+                                </span>
                                 {{ i.name || '' }}
                               </div>
-                              <div data-as-sortable-item-handle class="cue-item cue-item-video" data-ng-if="i.type == 'video'">
-                                {{ i.name }}
+                              <div data-as-sortable-item-handle class="cue-item cue-item-image" data-ng-if="i.type == 'image'">
+                                <span class="cue-properties">
+                                  <span data-ng-If="config.allowOverlap" class="glyphicon glyphicon-pushpin" data-ng-attr-title="Allow overlap"></span>
+                                  <span data-ng-If="config.opacity != null" class="glyphicon glyphicon-eye-open" data-ng-attr-title="Initial opacity is {{config.opacity}}"></span>
+                                </span>
+                                {{ i.name || '' }}
+                              </div>
+                              <div data-as-sortable-item-handle class="cue-item cue-item-html" data-ng-if="i.type == 'html'">
+                                <span class="cue-properties">
+                                  <span data-ng-If="config.allowOverlap" class="glyphicon glyphicon-pushpin" data-ng-attr-title="Allow overlap"></span>
+                                  <span data-ng-If="config.opacity != null" class="glyphicon glyphicon-eye-open" data-ng-attr-title="Initial opacity is {{config.opacity}}"></span>
+                                </span>
+                                {{ i.name || '' }}
                               </div>
                               <div data-as-sortable-item-handle class="cue-item cue-item-visual-control" data-ng-if="i.type == 'visual-control'">
+                                <span class="cue-properties">
+                                  <span data-ng-If="config.waitActive" class="glyphicon glyphicon-time" data-ng-attr-title="Wait active"></span>
+                                  <span data-ng-If="config.killActive" class="glyphicon glyphicon-stop" data-ng-attr-title="Kill active"></span>
+                                  <span data-ng-If="config.killAll" class="glyphicon glyphicon-th-large" data-ng-attr-title="Kill all"></span>
+                                  <span data-ng-If="config.delay != null" class="glyphicon glyphicon-time" data-ng-attr-title="Delay for {{config.delay}}"></span>
+                                  <span data-ng-If="config.script != null" class="glyphicon glyphicon-edit" data-ng-attr-title="Has custom script"></span>
+                                  <span data-ng-If="config.fadeTo != null && config.fadeRange[0] != null && config.fadeRange[1] != null" class="glyphicon glyphicon-sort"
+                                    data-ng-attr-title="Fade to {{ config.fadeTo }} from {{ config.loop[0] }} to {{ config.loop[1] }}"></span>
+                                </span>
                                 {{ i.name }}
                               </div>
                             </div>

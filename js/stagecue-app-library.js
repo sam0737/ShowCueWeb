@@ -1,5 +1,5 @@
-angular.module("stageCue").controller("sc.app.library", ['$scope', '$q', 'sc.audio', 'sc.library', 'sc.cueEngine', '$modal',
-function ($scope, $q, audio, library, cueEngine, $modal) {
+angular.module("stageCue").controller("sc.app.library", ['$scope', '$q', 'sc.renderer', 'sc.library', 'sc.cueEngine', '$modal',
+function ($scope, $q, renderer, library, cueEngine, $modal) {
   $scope.rawResources = library.rawResources;
   $scope.items = library.items;
   $scope.libraryDragOptions = {
@@ -13,7 +13,7 @@ function ($scope, $q, audio, library, cueEngine, $modal) {
 
   var modal;
   $scope.showAddResource = function() {
-    audio.stopPreview();
+    renderer.stopPreview();
     modal = $modal.open({
       templateUrl: 'partials/add-resource-modal.html',
       scope: $scope,
@@ -31,7 +31,7 @@ function ($scope, $q, audio, library, cueEngine, $modal) {
 
   $scope.replaceTarget = null;
   $scope.showReplace = function(item) {
-    audio.stopPreview();
+    renderer.stopPreview();
     $scope.replaceTarget = item;
     modal = $modal.open({
       templateUrl: 'partials/replace-resource-modal.html',
@@ -50,7 +50,7 @@ function ($scope, $q, audio, library, cueEngine, $modal) {
 
   $scope.itemPreviewing = 0;
   $scope.stopPreview = function() {
-    audio.stopPreview();
+    renderer.stopPreview();
   };
 
   $scope.removeAt = function(index) {
@@ -62,7 +62,7 @@ function ($scope, $q, audio, library, cueEngine, $modal) {
       return;
     $scope.itemPreviewing++;
     item.previewing++;
-    audio.preview(item, function() { 
+    renderer.preview(item, function() { 
       $scope.$apply(function() { 
         if ($scope.itemPreviewing > 0) $scope.itemPreviewing--;
         if (item.previewing > 0) item.previewing--; 

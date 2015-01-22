@@ -97,6 +97,52 @@ stage.directive('cuefloat', function() {
   };
 });
 
+var OPTIONAL_NON_NEG_FLOAT_PERCENT_REGEXP = /^[0-9]+(\.[0-9]+)?%?$|^\.[0-9]+%?$|^\s*$/;
+stage.directive('cuefloatPercent', function() {
+  return {
+    require: 'ngModel',
+    link: function(scope, elm, attrs, ctrl) {
+      ctrl.$validators.cuefloat = function(modelValue, viewValue) {
+        if (ctrl.$isEmpty(viewValue))
+          return true;
+        if (OPTIONAL_NON_NEG_FLOAT_PERCENT_REGEXP.test(viewValue)) {
+          return true;
+        }
+
+        return false;
+      };
+      ctrl.$parsers.push(function (viewValue) {
+        if (ctrl.$isEmpty(viewValue))
+          return null;
+        return viewValue;
+      });
+    }
+  };
+});
+
+var OPTIONAL_POSITION_STRING = /^(?:(?:left|center|right)(?:[+-][0-9.]+%?)?)?(?:\s*\b(?:top|center|bottom)(?:[+-][0-9.]+%?)?)?$/i;
+stage.directive('positionString', function() {
+  return {
+    require: 'ngModel',
+    link: function(scope, elm, attrs, ctrl) {
+      ctrl.$validators.cuefloat = function(modelValue, viewValue) {
+        if (ctrl.$isEmpty(viewValue))
+          return true;
+        if (OPTIONAL_POSITION_STRING.test(viewValue)) {
+          return true;
+        }
+
+        return false;
+      };
+      ctrl.$parsers.push(function (viewValue) {
+        if (ctrl.$isEmpty(viewValue))
+          return null;
+        return viewValue;
+      });
+    }
+  };
+});
+
 
 stage.directive("drawAudio", function(){
   return {

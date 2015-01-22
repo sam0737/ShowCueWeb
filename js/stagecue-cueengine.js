@@ -1,5 +1,5 @@
-var $audio;
-var $visual;
+var $q;
+var $renderer;
 var $userConfig;
 var $library;
 var $rootScope;
@@ -11,14 +11,14 @@ function Screen()
   this.transform = '';
   this.screenWidth = 0;
   this.screenHeight = 0;
-  this.width = 0;
-  this.height = 0;
-  this.left = 0;
-  this.top = 0;
+  this.width = null;
+  this.height = null;
+  this.positionMy = null;
+  this.positionAt = null;
   this.background = '#000000';
 }
 
-Screen.prototype.extendedProperties = ['id','name','transform','screenWidth','screenHeight','width','height','left','top','background'];
+Screen.prototype.extendedProperties = ['id','name','transform','screenWidth','screenHeight','width','height','positionMy','positionAt','background'];
 Screen.prototype.persist = function persist() {
   var c = {};
   this.extendedProperties.forEach(function (key) {
@@ -81,21 +81,70 @@ function AudioControlCueConfig()
 }
 
 VideoCueConfig.prototype = new CueConfig();
-VideoCueConfig.prototype.constructor = AudioCueConfig;
+VideoCueConfig.prototype.constructor = VideoCueConfig;
 VideoCueConfig.prototype.type = 'video';
-VideoCueConfig.prototype.extendedProperties = ['gain','allowOverlap','loop','range','delay'];
+VideoCueConfig.prototype.extendedProperties = ['gain','opacity','width','height','positionMy','positionAt','allowOverlap'];
 function VideoCueConfig()
 {
   CueConfig.prototype.constructor.apply(this);  
   this.gain = null;
-  this.delay = null;
-  this.range = [null, null];
-  this.loop = [null, null];
+  this.opacity = null;
+  this.width = null;
+  this.height = null;
+  this.positionMy = null;
+  this.positionAt = null;
   this.allowOverlap = false;
 }
 
+ImageCueConfig.prototype = new CueConfig();
+ImageCueConfig.prototype.constructor = ImageCueConfig;
+ImageCueConfig.prototype.type = 'image';
+ImageCueConfig.prototype.extendedProperties = ['opacity','width','height','positionMy','positionAt','allowOverlap'];
+function ImageCueConfig()
+{
+  CueConfig.prototype.constructor.apply(this);  
+  this.opacity = null;
+  this.width = null;
+  this.height = null;
+  this.positionMy = null;
+  this.positionAt = null;
+  this.allowOverlap = false;
+}
+
+HtmlCueConfig.prototype = new CueConfig();
+HtmlCueConfig.prototype.constructor = ImageCueConfig;
+HtmlCueConfig.prototype.type = 'html';
+HtmlCueConfig.prototype.extendedProperties = ['opacity','width','height','positionMy','positionAt','allowOverlap'];
+function HtmlCueConfig()
+{
+  CueConfig.prototype.constructor.apply(this);  
+  this.opacity = null;
+  this.width = null;
+  this.height = null;
+  this.positionMy = null;
+  this.positionAt = null;
+  this.allowOverlap = false;
+}
+
+VisualControlCueConfig.prototype = new CueConfig();
+VisualControlCueConfig.prototype.constructor = VisualControlCueConfig;
+VisualControlCueConfig.prototype.type = 'visual-control';
+VisualControlCueConfig.prototype.extendedProperties = ['waitActive','killActive','killAll','delay','script'];
+function VisualControlCueConfig()
+{
+  CueConfig.prototype.constructor.apply(this);  
+  this.waitActive = false;
+  this.killActive = false;
+  this.killAll = false;
+  this.delay = null;
+  this.script = null;
+}
+
 CueConfig.thawItems = function thawItems(values) {
-  return StageCue.thawItemsByType(values, [AudioCueConfig, AudioControlCueConfig, VideoCueConfig]);
+  return StageCue.thawItemsByType(values, [
+      AudioCueConfig, AudioControlCueConfig, 
+      VideoCueConfig, ImageCueConfig, HtmlCueConfig, 
+      VisualControlCueConfig]);
 };
 
 Channel.prototype.type = null;
@@ -229,13 +278,13 @@ Cue.prototype.removeChannelAt = function removeChannelAt(index)
   this.configs.splice(index, 1);
 };
 
-function CueEngine(audio, visual, userConfig, library, rootScope)
+function CueEngine(renderer, userConfig, library, rootScope, q)
 {
   $library = library;
-  $audio = audio;
-  $visual = visual;
+  $renderer = renderer;
   $userConfig = userConfig;
   $rootScope = rootScope;
+  $q = q;
   userConfig.onPersist('cueEngine', this.persist, this);
   userConfig.onThaw('cueEngine', this.thaw, this);
 
@@ -263,8 +312,7 @@ CueEngine.prototype.addChannel = function addChannel(channel)
   channel.name = 'Ch ' + this.channels.length;
   this.channels.push(channel);
   
-  $audio.addChannel(channel);
-  $visual.addChannel(channel);
+  $renderer.addChannel(channel);
 
   this.cues.forEach(function (cue) {
     cue.addChannel();
@@ -274,12 +322,13 @@ CueEngine.prototype.addChannel = function addChannel(channel)
 
 CueEngine.prototype.reapplyChannels = function reapplyChannels(channel)
 {
+  var promises = [];
   for (var i = 0; i < this.channels.length; i++)
   {
     var channel = this.channels[i];
-    $audio.addChannel(channel);
-    $visual.addChannel(channel);
+    promises.push($q.when($renderer.addChannel(channel)));
   }
+  return $q.all(promises);
 };
 
 CueEngine.prototype.removeChannelAt = function removeChannelAt(index)
@@ -288,8 +337,7 @@ CueEngine.prototype.removeChannelAt = function removeChannelAt(index)
   var channels = this.channels.splice(index, 1);
   var channel = channels[0];
 
-  $audio.removeChannel(channel);
-  $visual.removeChannel(channel);
+  $renderer.removeChannel(channel);
 
   this.cues.forEach(function (cue) {
     cue.removeChannelAt(index);
@@ -355,6 +403,7 @@ CueEngine.prototype.duplicateCue = function duplicateCue()
   var newCue = new Cue(); 
   newCue.thaw(data, libraryItemMap); 
   this.cues.splice(index, 0, newCue);
+  this.flush();
 };
 
 CueEngine.prototype.removeCueItemAt = function removeCueItemAt(cueIndex, index)
@@ -373,9 +422,8 @@ CueEngine.prototype.setCurrentAt = function setCurrentAt(index)
 
 CueEngine.prototype.go = function go()
 {
-  do 
-  {
-    var cue = 
+  var cueEngine = this;
+    var fn = 
       (function() {
         if (this.running) this.current++;
         if (this.current < 0 || this.current >= this.cues.length)
@@ -396,15 +444,24 @@ CueEngine.prototype.go = function go()
         for (var i = 0; i < cue.items.length; i++)
         {
           var item = cue.items[i];
-          if (item instanceof AudioItem || item instanceof AudioControlItem) {
-            this.runningItemCount++;
-            $audio.go(this.channels[i], item, cue.configs[i])
-              .then(function() { cueEngine.cueItemEndCallback(cue, era); });
-          }
+          this.runningItemCount++;
+          $q.when($renderer.go(this.channels[i], item, cue.configs[i]))
+            .then(function() { cueEngine.cueItemEndCallback(cue, era); });
         }
         return cue;
-      }).call(this);
-  } while (cue && cue.goMode == Cue.GO_WITH_NEXT);
+      });
+    
+    var cue;    
+
+    $q.when(!this.running ? this.reapplyChannels() : null).then(function() {
+  do 
+  {
+        cue = fn.call(cueEngine); 
+        
+          
+  }while (cue && cue.goMode == Cue.GO_WITH_NEXT);
+    });
+
 };
 
 CueEngine.prototype.cueItemEndCallback = function cueItemEndCallback(cue, era)
@@ -436,8 +493,7 @@ CueEngine.prototype.stop = function stop()
   for (var i = 0; i < this.channels.length; i++)
   {
     var channel = this.channels[i];
-    $audio.stop(channel);
-    $visual.stop(channel);
+    $renderer.stop(channel);
   }
 };
 
@@ -493,4 +549,4 @@ CueEngine.prototype.getLibraryItemMap = function getLibraryItemMap(v)
   return libraryItemMap;
 }
 
-angular.module("stageCue").service("sc.cueEngine", ['sc.audio', 'sc.visual', 'sc.userConfig', 'sc.library', '$rootScope', CueEngine]);
+angular.module("stageCue").service("sc.cueEngine", ['sc.renderer', 'sc.userConfig', 'sc.library', '$rootScope', '$q', CueEngine]);

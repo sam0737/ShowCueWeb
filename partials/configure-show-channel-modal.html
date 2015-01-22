@@ -12,6 +12,7 @@
             <span class="caret"></span>
           </button>
           <ul class="dropdown-menu" role="menu">
+            <li><a href="#" data-ng-click="config.screenId = null; config.screen = null">N/A</a></li>
             <li data-ng-repeat="s in cueEngine.screens"><a href="#" data-ng-click="config.screenId = s.id; config.screen = s">{{ s.name }}</a></li>
             <li data-ng-if="cueEngine.screens.length < cueEngine.channels.length">
               <a href="#" data-ng-click="newScreenForChannel()">New Screen...</a>

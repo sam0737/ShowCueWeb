@@ -10,6 +10,56 @@
           required data-ng-model="config.name">
       </div>
     </div>
+    <div class="form-group" data-ng-class="{'has-error': configForm.background.$invalid}">
+      <label for="configBackground" class="col-sm-2 control-label">Background</label>
+      <div class="col-sm-10">
+        <input type="color" class="form-control input-sm" id="configBackground" name="background"
+          data-ng-model="config.background" placeholder="Blank for default">
+      </div>
+    </div>
+    <div class="form-group" data-ng-class="{'has-error': configForm.transform.$invalid}">
+      <label for="configTransform" class="col-sm-2 control-label">Trasform</label>
+      <div class="col-sm-10">
+        <input type="text" class="form-control input-sm" id="configTransform" name="transform"
+          data-ng-model="config.transform" placeholder="Blank to disable">
+      </div>
+    </div>
+    <div class="form-group" data-ng-class="{'has-error': configForm.screenWidth.$invalid || configForm.screenHeight.$invalid}">
+      <label for="configScreenWidth" class="col-sm-2 control-label">Screen Size W*H</label>
+      <div class="col-sm-10 form-inline">
+        <div class="input-group input-group-sm">
+          <input type="text" class="form-control input-sm" id="configScreenWidth" name="screenWidth" placeholder="Blank for default"
+            data-cuefloat-percent data-ng-model="config.screenWidth">
+          <input type="text" class="form-control input-sm" id="configScreenHeight" name="screenHeight" placeholder="Blank for default"
+            data-cuefloat-percent data-ng-model="config.screenHeight">
+        </div>
+      </div>
+    </div>
+    <div class="form-group" data-ng-class="{'has-error': configForm.width.$invalid || configForm.height.$invalid}">
+      <label for="configWidth" class="col-sm-2 control-label">Wrapper Size W*H</label>
+      <div class="col-sm-10 form-inline">
+        <div class="input-group input-group-sm">
+          <input type="text" class="form-control input-sm" id="configWidth" name="width" placeholder="Blank for default"
+            data-cuefloat data-ng-model="config.width">
+          <input type="text" class="form-control input-sm" id="configHeight" name="height" placeholder="Blank for default"
+            data-cuefloat data-ng-model="config.height">
+        </div>
+      </div>
+    </div>
+    <div class="form-group" data-ng-class="{'has-error': configForm.positionMy.$invalid}">
+      <label for="configPositionMy" class="col-sm-2 control-label">Position My</label>
+      <div class="col-sm-10">
+        <input type="text" class="form-control input-sm" id="configPositionMy" name="positionMy" placeholder="Blank for default"
+          data-position-string data-ng-model="config.positionMy">
+      </div>
+    </div>
+    <div class="form-group" data-ng-class="{'has-error': configForm.positionAt.$invalid}">
+      <label for="configPositionAt" class="col-sm-2 control-label">Position At</label>
+      <div class="col-sm-10">
+        <input type="text" class="form-control input-sm" id="configPositionAt" name="positionAt" placeholder="Blank for default"
+          data-position-string data-ng-model="config.positionAt">
+      </div>
+    </div>
   </div>
   <div class="modal-footer">
     <input type="submit" class="btn btn-primary" value="Ok" data-ng-disabled="!configForm.$valid">

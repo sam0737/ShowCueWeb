@@ -41,18 +41,14 @@
           data-cuefloat data-ng-model="config.fadeTo">
       </div>
     </div>
-    <div class="form-group" data-ng-class="{'has-error': configForm.fadeRangeStart.$invalid || configForm.fadeRangeEnd.$invalid}"
-         data-buffer-time-picker data-ng-model="config.fadeRange">
+    <div class="form-group" data-ng-class="{'has-error': configForm.fadeRangeStart.$invalid || configForm.fadeRangeEnd.$invalid}">
       <label for="configFadeRangeStart" class="col-sm-2 control-label">Fading Range</label>
       <div class="col-sm-10 form-inline">
         <div class="input-group input-group-sm">
           <input type="text" class="form-control input-sm" id="configFadeRangeStart" name="fadeRangeStart" placeholder="Start; Blank to disable"
-            data-cuefloat data-ng-model="picks[0]">
+            data-cuefloat data-ng-model="config.fadeRange[0]">
           <input type="text" class="form-control input-sm" id="configFadeRangeEnd" name="fadeRangeEnd" placeholder="End; Blank to disable"
-            data-cuefloat data-ng-model="picks[1]">
-          <span class="input-group-btn">
-            <button class="btn btn-default btn-sm" type="button" data-ng-click="$pick()"><span class="glyphicon glyphicon-time"></span></button>
-          </span>
+            data-cuefloat data-ng-model="config.fadeRange[1]">
         </div>
       </div>
     </div>

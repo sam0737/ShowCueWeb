@@ -1,6 +1,6 @@
 var $q;
 var $userConfig;
-var $audio;
+var $renderer;
 var $cueEngine;
 
 function FileResource(fileEntry)
@@ -23,7 +23,7 @@ FileResource.prototype.readAsAudioBuffer = function readAsAudioBuffer() {
     var reader = new FileReader();
 
     reader.onload = function(e) {
-      $audio.decodeAudioData(reader.result, 
+      $renderer.decodeAudioData(reader.result, 
         function (buffer) {
           def.resolve(buffer);
         }, 
@@ -53,6 +53,7 @@ FileResource.prototype.readAsText = function readAsText() {
 function LibraryItem() {
   this.id = Math.floor((1 + Math.random()) * 0x100000000).toString(16).substring(1);
   this.isBuiltin = false;
+  this.previewing = false;
 }
 
 LibraryItem.prototype.type = null;
@@ -66,7 +67,7 @@ LibraryItem.prototype.thaw = function thaw(v) {
 };
 
 LibraryItem.thawItems = function thawItems(values) {
-  return StageCue.thawItemsByType(values, [AudioItem, VideoItem]);
+  return StageCue.thawItemsByType(values, [AudioItem, VideoItem, ImageItem, HtmlItem]);
 };
 
 function MapToResources(fileEntries)
@@ -95,22 +96,37 @@ AudioItem.prototype.loadFromResource = function loadFromResource(resource) {
     .catch(function (result) { console.log('Failed to load as audio', resource.name, result); });
 };
 
-VideoItem.prototype = new LibraryItem();
-VideoItem.prototype.type = 'video';
-VideoItem.prototype.constructor = VideoItem;
-function VideoItem() {
+BlobItem.prototype = new LibraryItem();
+function BlobItem() {
   LibraryItem.prototype.constructor.apply(this);  
-  this.previewing = false;
-};
-
-VideoItem.prototype.loadFromResource = function loadFromResource(resource) {
+}
+BlobItem.prototype.loadFromResource = function loadFromResource(resource) {
   this.name = resource.name;
   var item = this;
 
   return $q.when(resource.readAsBlob())
-    .then(function (blob) { item.blob = blob; })
+    .then(function (blob) { 
+      item.blob = blob; 
+      item.blobUrl = URL.createObjectURL(item.blob); 
+    })
     .catch(function (result) { console.log('Failed to load file', resource.name, result); });
 };
+BlobItem.prototype.destroy = function destroy() {
+  if (this.blobUrl)
+    URL.revokeObjectURL(this.blobUrl);
+};
+
+VideoItem.prototype = new BlobItem();
+VideoItem.prototype.type = 'video';
+function VideoItem() {}
+
+ImageItem.prototype = new BlobItem();
+ImageItem.prototype.type = 'image';
+function ImageItem() {}
+
+HtmlItem.prototype = new BlobItem();
+HtmlItem.prototype.type = 'html';
+function HtmlItem() {}
 
 AudioControlItem.prototype = new LibraryItem();
 AudioControlItem.prototype.type = 'audio-control';
@@ -132,9 +148,9 @@ function VisualControlItem(resource, callback) {
   this.isBuiltin = true;
 };
 
-function Library(audio, q, userConfig, cueEngine) {
+function Library(renderer, q, userConfig, cueEngine) {
   this.items = [ new AudioControlItem(), new VisualControlItem() ];
-  $audio = audio;
+  $renderer = renderer;
   $q = q;
   
   $userConfig = userConfig;
@@ -222,6 +238,8 @@ Library.prototype.addResource = function (resource)
 
   var i = 
     /\.(?:ogv|mp4|avi|webm|wbm|3gp)$/.test(resource.name) ? new VideoItem() :
+    /\.(?:htm|html)$/.test(resource.name) ? new HtmlItem() :
+    /\.(?:png|jpg|gif)$/.test(resource.name) ? new ImageItem() :
     new AudioItem();
   return $q.when(i.loadFromResource(resource)).then(function () {
     library.items.push(i);
@@ -241,8 +259,9 @@ Library.prototype.replaceResource = function (resource, item)
 
 Library.prototype.removeAt = function (index)
 {
-  this.items.splice(index, 1);
+  var removedItems = this.items.splice(index, 1);
+  removedItems.forEach(function (i) { if (i.destroy) i.destroy(); });
   this.flush();
 };
 
-angular.module("stageCue").service("sc.library", ['sc.audio', '$q', 'sc.userConfig', Library]);
+angular.module("stageCue").service("sc.library", ['sc.renderer', '$q', 'sc.userConfig', Library]);

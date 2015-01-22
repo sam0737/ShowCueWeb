@@ -126,6 +126,10 @@ function ($scope, $q, cueEngine, $document, $modal, $modalStack) {
     });      
   };
 
+  $scope.reapplyChannels = function reapplyChannels() {
+    cueEngine.reapplyChannels();
+  };
+
   $scope.configureCueItem = function configureCueItem(cue, itemIndex) {
     if (!(cue.items[itemIndex] instanceof LibraryItem)) 
       return;
