@@ -82,6 +82,13 @@ RawScreen.prototype.load = function load(unloadCallback)
   return def.promise;
 }
 
+RawScreen.prototype.getHead = function getWrapperNode()
+{
+  if (this.window)
+    return $('head', this.window.document);
+  return $();
+};
+
 RawScreen.prototype.getWrapperSelector = function getWrapperNode()
 {
   if (this.window)
@@ -172,11 +179,23 @@ angular.module("stageCue").service("sc.renderer", ['$q', function (q) {
         }
         setTimeout(ends, config.fadeRange[1] * 1000);
       }
+      if (config.style != null && config.style != "") 
+      {
+        if (currentActive != null && channel.screen)
+        {
+          var screen = rawScreens[channel.screen.id];
+          var styleString = config.style.replace(/\$ID\$/g, currentActive.elementId);
+          var style = $("<style>" + styleString + "</style>");
+          window.StyleFix.styleElement(style[0]);
+          screen.getHead().append(style);
+          currentActive.styles.push(style);
+        }
+      }
       if (config.script != null && config.script != "")
       {
-        endNow = false;
         if (currentActive != null && currentActive.visualNode != null)
         {
+          endNow = false;
           var ret = null;
           try { 
             ret = new Function(config.script).call(currentActive.visualNode);
@@ -184,6 +203,15 @@ angular.module("stageCue").service("sc.renderer", ['$q', function (q) {
             console.warn('Failure in executing user script', e);
           }
           $q.when(ret).finally(ends);
+        }
+      }
+      if (config.waitAnimation)
+      {
+        if (currentActive != null && currentActive.visualNode != null)
+        {
+          endNow = false;
+          currentActive.visualNode.one('animationend', ends);
+          currentActive.visualNode.one('webkitAnimationEnd', ends);
         }
       }
 
@@ -251,32 +279,48 @@ angular.module("stageCue").service("sc.renderer", ['$q', function (q) {
     var node;
     var removal;
 
+    var elementId = 
+      'id' +
+      Math.floor((1 + Math.random()) * 0x100000000).toString(16).substring(1) +
+      Math.floor((1 + Math.random()) * 0x100000000).toString(16).substring(1);
     if (item instanceof VideoItem)
     {
-      node = $('<video>');
+      node = $('<video>').attr({ id: elementId });
       node[0].src = item.blobUrl;
       node.one('ended', removal);
     } else if (item instanceof ImageItem)
     {
-      var node = $('<img>');
+      var node = $('<img>').attr({ id: elementId });
       node.one('load', function() { def.resolve(); });
       node[0].src = item.blobUrl;
     } else if (item instanceof HtmlItem)
     {
-      var node = $('<div>');
+      node = $('<div>').attr({ id: elementId });
       node.load(item.blobUrl, function() {
         def.resolve();
       });
     }
-    if (config.opacity != null)
-      node.css({opacity: config.opacity});
-    node.css({ width: config.width || item.width || 100, height: config.height || item.height || 100, position: 'absolute', zIndex: channel.index + 10 });
+    node.css({ 
+      width: config.width || item.width || 100, 
+      height: config.height || item.height || 100,
+      position: 'absolute', 
+      opacity: config.opacity || 1,
+      zIndex: channel.index + 10
+    });
     node.position({my: config.positionMy || 'center', at: config.positionAt || 'center', collision: 'none', of: screen.getWrapperSelector()});
 
     var clip = { 
-      visualNode: node,
+      visualNode: node, styles: [], elementId: elementId,
       endPromise: def.promise, deferredStop: defStop, allowOverlap: config.allowOverlap
     };
+    if (config.style != null && config.style != "") 
+    {
+      var styleString = config.style.replace(/\$ID\$/g, elementId);
+      var style = $("<style>" + styleString + "</style>");
+      window.StyleFix.styleElement(style[0]);
+      screen.getHead().append(style);
+      clip.styles.push(style);
+    }
     if (item instanceof VideoItem)
     {
       clip.source = a.createMediaElementSource(node[0]);
@@ -287,6 +331,7 @@ angular.module("stageCue").service("sc.renderer", ['$q', function (q) {
       node[0].play();
     }
     removal = function() {
+      clip.styles.forEach(function(i) { i.remove(); });
       node.remove();
       target.removeClip(clip);
       def.resolve();

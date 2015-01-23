@@ -83,7 +83,7 @@ function AudioControlCueConfig()
 VideoCueConfig.prototype = new CueConfig();
 VideoCueConfig.prototype.constructor = VideoCueConfig;
 VideoCueConfig.prototype.type = 'video';
-VideoCueConfig.prototype.extendedProperties = ['gain','opacity','width','height','positionMy','positionAt','allowOverlap'];
+VideoCueConfig.prototype.extendedProperties = ['gain','opacity','width','height','positionMy','positionAt','style','allowOverlap'];
 function VideoCueConfig()
 {
   CueConfig.prototype.constructor.apply(this);  
@@ -93,13 +93,14 @@ function VideoCueConfig()
   this.height = null;
   this.positionMy = null;
   this.positionAt = null;
+  this.style = null;
   this.allowOverlap = false;
 }
 
 ImageCueConfig.prototype = new CueConfig();
 ImageCueConfig.prototype.constructor = ImageCueConfig;
 ImageCueConfig.prototype.type = 'image';
-ImageCueConfig.prototype.extendedProperties = ['opacity','width','height','positionMy','positionAt','allowOverlap'];
+ImageCueConfig.prototype.extendedProperties = ['opacity','width','height','positionMy','positionAt','style','allowOverlap'];
 function ImageCueConfig()
 {
   CueConfig.prototype.constructor.apply(this);  
@@ -108,13 +109,14 @@ function ImageCueConfig()
   this.height = null;
   this.positionMy = null;
   this.positionAt = null;
+  this.style = null;
   this.allowOverlap = false;
 }
 
 HtmlCueConfig.prototype = new CueConfig();
 HtmlCueConfig.prototype.constructor = ImageCueConfig;
 HtmlCueConfig.prototype.type = 'html';
-HtmlCueConfig.prototype.extendedProperties = ['opacity','width','height','positionMy','positionAt','allowOverlap'];
+HtmlCueConfig.prototype.extendedProperties = ['opacity','width','height','positionMy','positionAt','style','allowOverlap'];
 function HtmlCueConfig()
 {
   CueConfig.prototype.constructor.apply(this);  
@@ -129,15 +131,17 @@ function HtmlCueConfig()
 VisualControlCueConfig.prototype = new CueConfig();
 VisualControlCueConfig.prototype.constructor = VisualControlCueConfig;
 VisualControlCueConfig.prototype.type = 'visual-control';
-VisualControlCueConfig.prototype.extendedProperties = ['waitActive','killActive','killAll','delay','script'];
+VisualControlCueConfig.prototype.extendedProperties = ['waitActive','waitAnimation','killActive','killAll','delay','style','script'];
 function VisualControlCueConfig()
 {
   CueConfig.prototype.constructor.apply(this);  
   this.waitActive = false;
+  this.waitAnimation = false;
   this.killActive = false;
   this.killAll = false;
   this.delay = null;
   this.script = null;
+  this.style = null;
 }
 
 CueConfig.thawItems = function thawItems(values) {
