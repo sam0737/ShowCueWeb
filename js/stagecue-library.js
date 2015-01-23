@@ -123,6 +123,19 @@ VideoItem.prototype.constructor = VideoItem;
 function VideoItem() {
   BlobItem.prototype.constructor.apply(this);  
 }
+VideoItem.prototype.loadFromResource = function loadFromResource(resource) {
+  var item = this;
+  return $q.when(BlobItem.prototype.loadFromResource.apply(this, arguments))
+    .then(function () {
+      var node = $('<video>');
+      node.one('loadedmetadata', function() { 
+        item.width = node[0].videoWidth;
+        item.height = node[0].videoHeight;
+      });
+      node[0].src = item.blobUrl;
+      node[0].preload = 'metadata';
+    });
+};
 
 ImageItem.prototype = new BlobItem();
 ImageItem.prototype.type = 'image';
@@ -130,6 +143,18 @@ ImageItem.prototype.constructor = ImageItem;
 function ImageItem() {
   BlobItem.prototype.constructor.apply(this);  
 }
+ImageItem.prototype.loadFromResource = function loadFromResource(resource) {
+  var item = this;
+  return $q.when(BlobItem.prototype.loadFromResource.apply(this, arguments))
+    .then(function () {
+      var node = $('<img>');
+      node.one('load', function() { 
+        item.width = node[0].naturalWidth;
+        item.height = node[0].naturalHeight;
+      });
+      node[0].src = item.blobUrl;
+    });
+};
 
 HtmlItem.prototype = new BlobItem();
 HtmlItem.prototype.type = 'html';

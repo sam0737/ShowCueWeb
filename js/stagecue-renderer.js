@@ -120,12 +120,8 @@ angular.module("stageCue").service("sc.renderer", ['$q', function (q) {
       return this.goAudio.apply(this, arguments);
     if (item instanceof AudioControlItem || item instanceof VisualControlItem)
       return this.goControl.apply(this, arguments);
-    if (item instanceof VideoItem)
-      return this.goVideo.apply(this, arguments);
-    if (item instanceof ImageItem)
-      return this.goImage.apply(this, arguments);
-    if (item instanceof HtmlItem)
-      return this.goHtml.apply(this, arguments);
+    if (item instanceof VideoItem || item instanceof ImageItem || item instanceof HtmlItem)
+      return this.goHtmlBasedElement.apply(this, arguments);
   }
 
   this.goControl = function goControl(channel, item, config)
@@ -242,7 +238,7 @@ angular.module("stageCue").service("sc.renderer", ['$q', function (q) {
     return def.promise;
   };
 
-  this.goVideo = function goVideo(channel, item, config)
+  this.goHtmlBasedElement = function goHtmlBasedElement(channel, item, config)
   {
     if (!channel.screen) return;
 
@@ -252,111 +248,50 @@ angular.module("stageCue").service("sc.renderer", ['$q', function (q) {
     var screen = rawScreens[channel.screen.id];
     var target = renderTargets[channel.id];
 
-    var node = $('<video>');
-    node[0].src = item.blobUrl;
-    if (config.width != null)
-      node.css({width: config.width});
-    if (config.height != null)
-      node.css({height: config.height});
-    node.css({position: 'absolute', zIndex: channel.index + 10 });
+    var node;
+    var removal;
+
+    if (item instanceof VideoItem)
+    {
+      node = $('<video>');
+      node[0].src = item.blobUrl;
+      node.one('ended', removal);
+    } else if (item instanceof ImageItem)
+    {
+      var node = $('<img>');
+      node.one('load', function() { def.resolve(); });
+      node[0].src = item.blobUrl;
+    } else if (item instanceof HtmlItem)
+    {
+      var node = $('<div>');
+      node.load(item.blobUrl, function() {
+        def.resolve();
+      });
+    }
+    if (config.opacity != null)
+      node.css({opacity: config.opacity});
+    node.css({ width: config.width || item.width || 100, height: config.height || item.height || 100, position: 'absolute', zIndex: channel.index + 10 });
     node.position({my: config.positionMy || 'center', at: config.positionAt || 'center', collision: 'none', of: screen.getWrapperSelector()});
 
     var clip = { 
-      source: a.createMediaElementSource(node[0]), gain: a.createGain(), visualNode: node,
+      visualNode: node,
       endPromise: def.promise, deferredStop: defStop, allowOverlap: config.allowOverlap
     };
-    var removal = function() {
-      node.remove();
-      target.removeClip(clip);
-      def.resolve();
-    };
-    node.on('ended', removal);
-    defStop.promise.then(removal);
-
-    clip.source.connect(clip.gain);
-    clip.gain.connect(target.masterGain);
-    clip.gain.gain.value = config.gain != null ? config.gain : 1;
-
-    if (config.opacity != null)
-      node.css({opacity: config.opacity});
-    node[0].play();
-    screen.getWrapperSelector().append(node);
-    target.addClip(clip);
-
-    return def.promise;
-  };
-
-  this.goImage = function goImage(channel, item, config)
-  {
-    if (!channel.screen) return;
-
-    var def = $q.defer();
-    var defStop = $q.defer();
-    
-    var screen = rawScreens[channel.screen.id];
-    var target = renderTargets[channel.id];
-
-    var node = $('<img>');
-    node[0].src = item.blobUrl;
-    if (config.width != null)
-      node.css({width: config.width});
-    if (config.height != null)
-      node.css({height: config.height});
-    node.css({position: 'absolute', zIndex: channel.index + 10 });
-    node.position({my: config.positionMy || 'center', at: config.positionAt || 'center', collision: 'none', of: screen.getWrapperSelector()});
-
-    var clip = { 
-      endPromise: def.promise, deferredStop: defStop, allowOverlap: config.allowOverlap, visualNode: node
-    };
-    var removal = function() {
+    if (item instanceof VideoItem)
+    {
+      clip.source = a.createMediaElementSource(node[0]);
+      clip.gain = a.createGain();
+      clip.source.connect(clip.gain);
+      clip.gain.connect(target.masterGain);
+      clip.gain.gain.value = config.gain != null ? config.gain : 1;
+      node[0].play();
+    }
+    removal = function() {
       node.remove();
       target.removeClip(clip);
       def.resolve();
     };
     defStop.promise.then(removal);
-    if (config.opacity != null)
-      node.css({opacity: config.opacity});
-    node.on('load', function() { def.resolve(); });
-
-    screen.getWrapperSelector().append(node);
-    target.addClip(clip);
-
-    return def.promise;
-  };
-
-  this.goHtml = function goHtml(channel, item, config)
-  {
-    if (!channel.screen) return;
-
-    var def = $q.defer();
-    var defStop = $q.defer();
-    
-    var screen = rawScreens[channel.screen.id];
-    var target = renderTargets[channel.id];
-
-    var node = $('<div>');
-    node.load(item.blobUrl, function() {
-      def.resolve();
-    });
-
-    if (config.width != null)
-      node.css({width: config.width});
-    if (config.height != null)
-      node.css({height: config.height});
-    node.css({position: 'absolute', zIndex: channel.index + 10 });
-    node.position({my: config.positionMy || 'center', at: config.positionAt || 'center', collision: 'none', of: screen.getWrapperSelector()});
-
-    var clip = { 
-      endPromise: def.promise, deferredStop: defStop, allowOverlap: config.allowOverlap, visualNode: node
-    };
-    var removal = function() {
-      node.remove();
-      target.removeClip(clip);
-      def.resolve();
-    };
-    defStop.promise.then(removal);
-    if (config.opacity != null)
-      node.css({opacity: config.opacity});
 
     screen.getWrapperSelector().append(node);
     target.addClip(clip);
