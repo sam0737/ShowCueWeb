@@ -152,6 +152,7 @@ Channel.prototype.extendedProperties = ['type', 'name'];
 function Channel()
 {
   this.id = Math.floor((1 + Math.random()) * 0x100000000).toString(16).substring(1);
+  this.index = 0;
   this.name = 'Ch';
 }
 
@@ -326,6 +327,7 @@ CueEngine.prototype.reapplyChannels = function reapplyChannels(channel)
   for (var i = 0; i < this.channels.length; i++)
   {
     var channel = this.channels[i];
+    channel.index = i;
     promises.push($q.when($renderer.addChannel(channel)));
   }
   return $q.all(promises);
@@ -359,7 +361,7 @@ CueEngine.prototype.addCue = function addCue(item)
   if (this.running) return;
   var cue = new Cue(this.channels.length);
   cue.description = item.name;
-  this.cues.push(cue);
+  this.cues.splice(this.current < 0 ? 0 : this.current, 0, cue);
   if (item != null)
     cue.setItem(0 /* First matching channel? */, item);
   if (this.cues.length == 1)
@@ -451,17 +453,14 @@ CueEngine.prototype.go = function go()
         return cue;
       });
     
-    var cue;    
+  var cue;    
 
-    $q.when(!this.running ? this.reapplyChannels() : null).then(function() {
-  do 
-  {
-        cue = fn.call(cueEngine); 
-        
-          
-  }while (cue && cue.goMode == Cue.GO_WITH_NEXT);
-    });
-
+  $q.when(!this.running ? this.reapplyChannels() : null).then(function() {
+    do 
+    {
+      cue = fn.call(cueEngine); 
+    } while (cue && cue.goMode == Cue.GO_WITH_NEXT);
+  });
 };
 
 CueEngine.prototype.cueItemEndCallback = function cueItemEndCallback(cue, era)

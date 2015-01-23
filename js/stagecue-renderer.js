@@ -131,13 +131,13 @@ angular.module("stageCue").service("sc.renderer", ['$q', function (q) {
   this.goControl = function goControl(channel, item, config)
   {
     var def = $q.defer();
-    var channel = renderTargets[channel.id];
+    var target = renderTargets[channel.id];
 
-    var currentActive = channel.currentClip;
+    var currentActive = target.currentClip;
 
     function ends() {
       if (config.killAll) {
-        this.stop(channel);
+        target.stop();
       } else if (config.killActive) {
         if (currentActive) {
           currentActive.deferredStop.resolve();
@@ -154,7 +154,9 @@ angular.module("stageCue").service("sc.renderer", ['$q', function (q) {
     var defDelay = $q.defer();
     if (config.delay)
     {
-      setTimeout(function() { defDelay.resolve(); }, config.delay * 1000);
+      setTimeout(function() {
+        defDelay.resolve(); 
+      }, config.delay * 1000);
     } else {
       defDelay.resolve();
     }
@@ -164,9 +166,9 @@ angular.module("stageCue").service("sc.renderer", ['$q', function (q) {
       if (config.fadeTo != null && config.fadeRange[0] != null && config.fadeRange[1] != null)
       {
         endNow = false;
-        if (channel.currentClip != null && channel.currentClip.gain != null)
+        if (currentActive != null && currentActive.gain != null)
         {
-          var param = channel.currentClip.gain.gain;
+          var param = currentActive.gain.gain;
           param.cancelScheduledValues(0);
           param.setValueAtTime(param.value, a.currentTime + config.fadeRange[0]);
           param.exponentialRampToValueAtTime(config.fadeTo || 0.01, a.currentTime + config.fadeRange[1]);
@@ -174,18 +176,17 @@ angular.module("stageCue").service("sc.renderer", ['$q', function (q) {
         }
         setTimeout(ends, config.fadeRange[1] * 1000);
       }
-      if (config.script != null)
+      if (config.script != null && config.script != "")
       {
-        if (channel.currentClip != null && channel.currentClip.visualNode != null)
+        endNow = false;
+        if (currentActive != null && currentActive.visualNode != null)
         {
-          var ret =
-            (function() { 
-              try { 
-                return eval(config.script);
-              } catch (e) {
-                console.warn('Failure in executing user script', e);
-              }
-            }).call(visualNode);
+          var ret = null;
+          try { 
+            ret = new Function(config.script).call(currentActive.visualNode);
+          } catch (e) {
+            console.warn('Failure in executing user script', e);
+          }
           $q.when(ret).finally(ends);
         }
       }
@@ -257,7 +258,7 @@ angular.module("stageCue").service("sc.renderer", ['$q', function (q) {
       node.css({width: config.width});
     if (config.height != null)
       node.css({height: config.height});
-    node.css({position: 'absolute'});
+    node.css({position: 'absolute', zIndex: channel.index + 10 });
     node.position({my: config.positionMy || 'center', at: config.positionAt || 'center', collision: 'none', of: screen.getWrapperSelector()});
 
     var clip = { 
@@ -276,7 +277,7 @@ angular.module("stageCue").service("sc.renderer", ['$q', function (q) {
     clip.gain.connect(target.masterGain);
     clip.gain.gain.value = config.gain != null ? config.gain : 1;
 
-    if (config.opacity)
+    if (config.opacity != null)
       node.css({opacity: config.opacity});
     node[0].play();
     screen.getWrapperSelector().append(node);
@@ -301,7 +302,7 @@ angular.module("stageCue").service("sc.renderer", ['$q', function (q) {
       node.css({width: config.width});
     if (config.height != null)
       node.css({height: config.height});
-    node.css({position: 'absolute'});
+    node.css({position: 'absolute', zIndex: channel.index + 10 });
     node.position({my: config.positionMy || 'center', at: config.positionAt || 'center', collision: 'none', of: screen.getWrapperSelector()});
 
     var clip = { 
@@ -313,8 +314,9 @@ angular.module("stageCue").service("sc.renderer", ['$q', function (q) {
       def.resolve();
     };
     defStop.promise.then(removal);
-    if (config.opacity)
+    if (config.opacity != null)
       node.css({opacity: config.opacity});
+    node.on('load', function() { def.resolve(); });
 
     screen.getWrapperSelector().append(node);
     target.addClip(clip);
@@ -333,12 +335,15 @@ angular.module("stageCue").service("sc.renderer", ['$q', function (q) {
     var target = renderTargets[channel.id];
 
     var node = $('<div>');
-    node.load(item.blobUrl);
+    node.load(item.blobUrl, function() {
+      def.resolve();
+    });
+
     if (config.width != null)
       node.css({width: config.width});
     if (config.height != null)
       node.css({height: config.height});
-    node.css({position: 'absolute'});
+    node.css({position: 'absolute', zIndex: channel.index + 10 });
     node.position({my: config.positionMy || 'center', at: config.positionAt || 'center', collision: 'none', of: screen.getWrapperSelector()});
 
     var clip = { 
@@ -350,7 +355,7 @@ angular.module("stageCue").service("sc.renderer", ['$q', function (q) {
       def.resolve();
     };
     defStop.promise.then(removal);
-    if (config.opacity)
+    if (config.opacity != null)
       node.css({opacity: config.opacity});
 
     screen.getWrapperSelector().append(node);

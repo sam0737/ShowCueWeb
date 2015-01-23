@@ -1,0 +1,61 @@
+<div class="modal-header"> 
+  <h3 class="modal-title">Configure Audio Control</h3> 
+</div> 
+<form class="form-horizontal" name="configForm" data-ng-submit="configForm.$valid && $close()">
+  <ng-include src="'partials/configure-cue-partials.html'"></ng-include>
+  <div class="modal-body">
+    <div class="form-group">
+      <div class="col-sm-offset-2 col-sm-10">
+        <div class="checkbox">
+          <label>
+            <input type="checkbox" data-ng-model="config.waitActive">
+            Wait active clip to end.
+          </label>
+        </div>
+      </div>
+    </div>
+    <div class="form-group">
+      <div class="col-sm-offset-2 col-sm-10">
+        <div class="checkbox">
+          <label>
+            <input type="checkbox" data-ng-model="config.killActive">
+            At the end, kill active clip.
+          </label>
+        </div>
+      </div>
+    </div>
+    <div class="form-group">
+      <div class="col-sm-offset-2 col-sm-10">
+        <div class="checkbox">
+          <label>
+            <input type="checkbox" data-ng-model="config.killAll">
+            At the end, kill all clips.
+          </label>
+        </div>
+      </div>
+    </div>
+    <div class="form-group" data-ng-class="{'has-error': configForm.delay.$invalid}">
+      <label for="configDelay" class="col-sm-2 control-label">Delay</label>
+      <div class="col-sm-10">
+        <input type="text" class="form-control input-sm" id="configDelay" name="delay" placeholder="Blank for default"
+          data-cuefloat data-ng-model="config.delay">
+        </span>
+      </div>
+    </div>
+    <div class="form-group" data-ng-class="{'has-error': configForm.script.$invalid}">
+      <label for="configScript" class="col-sm-2 control-label">Script</label>
+      <div class="col-sm-10">
+        <textarea type="text" class="form-control" id="configScript" name="script" placeholder="Blank for default" rows="5"
+          data-ng-model="config.script">
+        </textarea>
+        </span>
+      </div>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <input type="submit" class="btn btn-primary" value="Ok" data-ng-disabled="!configForm.$valid">
+  </div>
+</form>
+
+
+

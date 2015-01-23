@@ -97,6 +97,7 @@ AudioItem.prototype.loadFromResource = function loadFromResource(resource) {
 };
 
 BlobItem.prototype = new LibraryItem();
+BlobItem.prototype.constructor = BlobItem;
 function BlobItem() {
   LibraryItem.prototype.constructor.apply(this);  
 }
@@ -118,15 +119,24 @@ BlobItem.prototype.destroy = function destroy() {
 
 VideoItem.prototype = new BlobItem();
 VideoItem.prototype.type = 'video';
-function VideoItem() {}
+VideoItem.prototype.constructor = VideoItem;
+function VideoItem() {
+  BlobItem.prototype.constructor.apply(this);  
+}
 
 ImageItem.prototype = new BlobItem();
 ImageItem.prototype.type = 'image';
-function ImageItem() {}
+ImageItem.prototype.constructor = ImageItem;
+function ImageItem() {
+  BlobItem.prototype.constructor.apply(this);  
+}
 
 HtmlItem.prototype = new BlobItem();
 HtmlItem.prototype.type = 'html';
-function HtmlItem() {}
+HtmlItem.prototype.constructor = HtmlItem;
+function HtmlItem() {
+  BlobItem.prototype.constructor.apply(this);  
+}
 
 AudioControlItem.prototype = new LibraryItem();
 AudioControlItem.prototype.type = 'audio-control';
