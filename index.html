@@ -41,6 +41,7 @@
         </div>
         <div class="navbar-collapse">
           <form class="navbar-form navbar-right">
+            <span class="btn" style="cursor: default; border: 3px dashed white" data-to-url-drop-target data-url-drop="urlDrop(results)">Drop to convert to Data URL</span>
             <button class="btn btn-default" data-ng-click="downloadConfig()" data-ng-show="stageReady" 
               tooltip-placement="bottom" tooltip="Save as 'config.js' in the workspace">Download Config</button>
             <button class="btn btn-danger" data-ng-click="resetConfig()" data-ng-hide="stageReady">Reset Config</button>
@@ -64,7 +65,6 @@
                   <button type="button" class="btn btn-default" data-ng-click="stopPreview()" data-ng-show="itemPreviewing">
                     <span class="glyphicon glyphicon-stop"></span> Stop</span>
                   </button>
-
                   <button type="button" class="btn btn-default btn-primary" data-ng-click="showAddResource()">
                     <span class="glyphicon glyphicon-plus"></span> Add</span>
                   </button>

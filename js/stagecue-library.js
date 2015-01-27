@@ -215,7 +215,7 @@ Library.prototype.populateWorkspace = function(entry)
          if (entry.isDirectory) {
            pending++;
            readEntries(entry.createReader());
-         } else {
+         } else if (library.getFileType(entry.name) != null) {
            entries.push(entry);
          }
        });
@@ -267,15 +267,28 @@ Library.prototype.findResourceByName = function (name)
   return StageCue.arrayFind.call(this.rawResources, function (r) { return r.name == name; });
 };
 
+Library.prototype.getFileType = function (filename)
+{
+  if (/\.(?:ogv|mp4|avi|webm|wbm|3gp)$/.test(filename)) 
+    return VideoItem;
+  if (/\.(?:html|htm)$/.test(filename)) 
+    return HtmlItem;
+  if (/\.(?:png|jpg|gif)$/.test(filename)) 
+    return ImageItem;
+  if (/\.(?:mp3|m4a|ogg|wav)$/.test(filename)) 
+    return AudioItem;
+  if (/\.(?:js)$/.test(filename)) 
+    return BlobItem;
+  return null;
+}
+
 Library.prototype.addResource = function (resource)
 {
   var library = this;
-
-  var i = 
-    /\.(?:ogv|mp4|avi|webm|wbm|3gp)$/.test(resource.name) ? new VideoItem() :
-    /\.(?:htm|html)$/.test(resource.name) ? new HtmlItem() :
-    /\.(?:png|jpg|gif)$/.test(resource.name) ? new ImageItem() :
-    new AudioItem();
+  var t = this.getFileType(resource.name);
+  if (t == null) 
+    return null;
+  var i = new t();
   return $q.when(i.loadFromResource(resource)).then(function () {
     library.items.push(i);
     library.flush();

@@ -1,6 +1,7 @@
 var AudioContext = window.AudioContext || window.webkitAudioContext;
 var a = new AudioContext();
 var $q;
+var seq = 0;
 
 function RenderTarget(channel) 
 {
@@ -13,9 +14,12 @@ function RenderTarget(channel)
   if (channel.screen) this.screenId = channel.screen.id;
 }
 
-RenderTarget.prototype.stop = function()
+RenderTarget.prototype.stop = function(targetSeq)
 {
-  this.playingClips.forEach(function (clip) { clip.deferredStop.resolve(); });
+  this.playingClips.forEach(function (clip) { 
+    if (targetSeq == null || clip.seq < targetSeq)
+      clip.deferredStop.resolve(); 
+  });
 };
 
 RenderTarget.prototype.destroy = function()
@@ -26,6 +30,7 @@ RenderTarget.prototype.destroy = function()
 
 RenderTarget.prototype.addClip = function addClip(clip)
 {
+  clip.seq = seq++;
   if (this.currentClip && !this.currentClip.allowOverlap) {
     this.currentClip.deferredStop.resolve();
   }
@@ -135,12 +140,13 @@ angular.module("stageCue").service("sc.renderer", ['$q', function (q) {
   {
     var def = $q.defer();
     var target = renderTargets[channel.id];
+    var targetSeq = seq;
 
     var currentActive = target.currentClip;
 
     function ends() {
       if (config.killAll) {
-        target.stop();
+        target.stop(targetSeq);
       } else if (config.killActive) {
         if (currentActive) {
           currentActive.deferredStop.resolve();
@@ -291,8 +297,11 @@ angular.module("stageCue").service("sc.renderer", ['$q', function (q) {
     } else if (item instanceof ImageItem)
     {
       var node = $('<img>').attr({ id: elementId });
-      node.one('load', function() { def.resolve(); });
-      node[0].src = item.blobUrl;
+      node[0].src = 'partials/1x1.png';
+      setTimeout(function() { 
+        node.one('load', function() { def.resolve(); });
+        node[0].src = item.blobUrl;
+      }, 0);
     } else if (item instanceof HtmlItem)
     {
       node = $('<div>').attr({ id: elementId });
@@ -304,7 +313,7 @@ angular.module("stageCue").service("sc.renderer", ['$q', function (q) {
       width: config.width || item.width || 100, 
       height: config.height || item.height || 100,
       position: 'absolute', 
-      opacity: config.opacity || 1,
+      opacity: config.opacity || undefined,
       zIndex: channel.index + 10
     });
     node.position({my: config.positionMy || 'center', at: config.positionAt || 'center', collision: 'none', of: screen.getWrapperSelector()});

@@ -71,7 +71,16 @@ function ($q, $scope, $timeout, userConfig, library, cueEngine, $modal) {
           }
         })
     });
-  }
+  };
+
+  $scope.urlDrop = function(results) {
+    var s = $scope.$new();
+    s.files = results;
+    $modal.open({ 
+      templateUrl: 'partials/url-drop-modal.html',
+      scope: s
+    });
+  };
 }]);
 
 var OPTIONAL_NON_NEG_FLOAT_REGEXP = /^[0-9]+(\.[0-9]+)?$|^\.[0-9]+$|^\s*$/;
@@ -142,7 +151,6 @@ stage.directive('positionString', function() {
     }
   };
 });
-
 
 stage.directive("drawAudio", function(){
   return {
@@ -383,6 +391,48 @@ stage.directive('bufferTimePicker', ['$modal', '$filter', function($modal, $filt
           }
         });
       };
+    }
+  };
+}]);
+
+stage.directive('toUrlDropTarget', ['$timeout', '$q', function($timeout, $q) {
+  return {
+    restrict: 'A',
+    scope: {
+      urlDrop: '&urlDrop'
+    },
+    link: function(scope, elem, attrs) {
+      function ignoreDefault(e) {        
+        e.preventDefault();  
+        e.stopPropagation();
+      };
+      elem.on('dragover', ignoreDefault);
+      elem.on('dragenter', ignoreDefault);
+      elem.on('drop', function (e) {
+        ignoreDefault(e);
+        if (
+          e.originalEvent.dataTransfer &&
+          e.originalEvent.dataTransfer.items.length
+        ) {
+          var defers = {};
+          [].forEach.call(
+            e.originalEvent.dataTransfer.files,
+            function(f) {
+              var def = $q.defer();
+              var reader = new FileReader();
+              reader.onload = function() {
+                def.resolve(reader.result);
+              };
+              reader.onerror = def.reject;
+              reader.readAsDataURL(f);
+              defers[f.name] = def.promise;
+            });
+
+          $q.all(defers).then(function (results) {
+            scope.urlDrop({results: results});
+          });
+        }
+      });
     }
   };
 }]);
