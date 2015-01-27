@@ -30,7 +30,6 @@ RenderTarget.prototype.destroy = function()
 
 RenderTarget.prototype.addClip = function addClip(clip)
 {
-  clip.seq = seq++;
   if (this.currentClip && !this.currentClip.allowOverlap) {
     this.currentClip.deferredStop.resolve();
   }
@@ -238,7 +237,7 @@ angular.module("stageCue").service("sc.renderer", ['$q', function (q) {
     var target = renderTargets[channel.id];
 
     var clip = { 
-      source: a.createBufferSource(), gain: a.createGain(), 
+      source: a.createBufferSource(), gain: a.createGain(), seq: seq++,
       endPromise: def.promise, deferredStop: defStop, allowOverlap: config.allowOverlap
     };
     clip.source.buffer = item.buffer;
@@ -289,66 +288,85 @@ angular.module("stageCue").service("sc.renderer", ['$q', function (q) {
       'id' +
       Math.floor((1 + Math.random()) * 0x100000000).toString(16).substring(1) +
       Math.floor((1 + Math.random()) * 0x100000000).toString(16).substring(1);
+
     if (item instanceof VideoItem)
     {
       node = $('<video>').attr({ id: elementId });
-      node[0].src = item.blobUrl;
-      node.one('ended', removal);
     } else if (item instanceof ImageItem)
     {
-      var node = $('<img>').attr({ id: elementId });
-      node[0].src = 'partials/1x1.png';
-      setTimeout(function() { 
-        node.one('load', function() { def.resolve(); });
-        node[0].src = item.blobUrl;
-      }, 0);
+      node = $('<img>').attr({ id: elementId });
     } else if (item instanceof HtmlItem)
     {
       node = $('<div>').attr({ id: elementId });
-      node.load(item.blobUrl, function() {
-        def.resolve();
-      });
     }
-    node.css({ 
-      width: config.width || item.width || 100, 
-      height: config.height || item.height || 100,
-      position: 'absolute', 
-      opacity: config.opacity || undefined,
-      zIndex: channel.index + 10
-    });
-    node.position({my: config.positionMy || 'center', at: config.positionAt || 'center', collision: 'none', of: screen.getWrapperSelector()});
 
     var clip = { 
-      visualNode: node, styles: [], elementId: elementId,
+      visualNode: node, styles: [], elementId: elementId, seq: seq++,
       endPromise: def.promise, deferredStop: defStop, allowOverlap: config.allowOverlap
     };
-    if (config.style != null && config.style != "") 
-    {
-      var styleString = config.style.replace(/\$ID\$/g, elementId);
-      var style = $("<style>" + styleString + "</style>");
-      window.StyleFix.styleElement(style[0]);
-      screen.getHead().append(style);
-      clip.styles.push(style);
-    }
-    if (item instanceof VideoItem)
-    {
-      clip.source = a.createMediaElementSource(node[0]);
-      clip.gain = a.createGain();
-      clip.source.connect(clip.gain);
-      clip.gain.connect(target.masterGain);
-      clip.gain.gain.value = config.gain != null ? config.gain : 1;
-      node[0].play();
-    }
-    removal = function() {
-      clip.styles.forEach(function(i) { i.remove(); });
-      node.remove();
-      target.removeClip(clip);
-      def.resolve();
-    };
-    defStop.promise.then(removal);
 
-    screen.getWrapperSelector().append(node);
+    var defDelay = $q.defer();
+    if (config.delay)
+    {
+      setTimeout(function() {
+        defDelay.resolve(); 
+      }, config.delay * 1000);
+    } else {
+      defDelay.resolve();
+    }
+
     target.addClip(clip);
+    defDelay.promise.then(function() {
+      if (item instanceof VideoItem)
+      {
+        node[0].src = item.blobUrl;
+        node.one('ended', removal);
+      } else if (item instanceof ImageItem)
+      {
+        node[0].src = item.blobUrl + '#' + seq;
+        node.one('load', function() { def.resolve(); });
+      } else if (item instanceof HtmlItem)
+      {
+        node.load(item.blobUrl, function() {
+          def.resolve();
+        });
+      }
+      node.css({ 
+        width: config.width || item.width || 100, 
+        height: config.height || item.height || 100,
+        position: 'absolute', 
+        opacity: config.opacity || undefined,
+        zIndex: channel.index + 10
+      });
+      node.position({my: config.positionMy || 'center', at: config.positionAt || 'center', collision: 'none', of: screen.getWrapperSelector()});
+
+      if (config.style != null && config.style != "") 
+      {
+        var styleString = config.style.replace(/\$ID\$/g, elementId);
+        var style = $("<style>" + styleString + "</style>");
+        window.StyleFix.styleElement(style[0]);
+        screen.getHead().append(style);
+        clip.styles.push(style);
+      }
+      if (item instanceof VideoItem)
+      {
+        clip.source = a.createMediaElementSource(node[0]);
+        clip.gain = a.createGain();
+        clip.source.connect(clip.gain);
+        clip.gain.connect(target.masterGain);
+        clip.gain.gain.value = config.gain != null ? config.gain : 1;
+        node[0].play();
+      }
+      removal = function() {
+        clip.styles.forEach(function(i) { i.remove(); });
+        node.remove();
+        target.removeClip(clip);
+        def.resolve();
+      };
+      defStop.promise.then(removal);
+
+      screen.getWrapperSelector().append(node);
+    });
 
     return def.promise;
   };

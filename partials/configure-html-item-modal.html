@@ -12,6 +12,14 @@
         </span>
       </div>
     </div>
+    <div class="form-group" data-ng-class="{'has-error': configForm.delay.$invalid}">
+      <label for="configDelay" class="col-sm-2 control-label">Delay</label>
+      <div class="col-sm-10">
+        <input type="text" class="form-control input-sm" id="configDelay" name="delay" placeholder="Blank for default"
+          data-cuefloat data-ng-model="config.delay">
+        </span>
+      </div>
+    </div>
     <div class="form-group" data-ng-class="{'has-error': configForm.width.$invalid || configForm.height.$invalid}">
       <label for="configWidth" class="col-sm-2 control-label">Size W*H</label>
       <div class="col-sm-10 form-inline">

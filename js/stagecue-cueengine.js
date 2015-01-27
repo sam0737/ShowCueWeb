@@ -83,12 +83,13 @@ function AudioControlCueConfig()
 VideoCueConfig.prototype = new CueConfig();
 VideoCueConfig.prototype.constructor = VideoCueConfig;
 VideoCueConfig.prototype.type = 'video';
-VideoCueConfig.prototype.extendedProperties = ['gain','opacity','width','height','positionMy','positionAt','style','allowOverlap'];
+VideoCueConfig.prototype.extendedProperties = ['gain','opacity','delay','width','height','positionMy','positionAt','style','allowOverlap'];
 function VideoCueConfig()
 {
   CueConfig.prototype.constructor.apply(this);  
   this.gain = null;
   this.opacity = null;
+  this.delay = null;
   this.width = null;
   this.height = null;
   this.positionMy = null;
@@ -100,11 +101,12 @@ function VideoCueConfig()
 ImageCueConfig.prototype = new CueConfig();
 ImageCueConfig.prototype.constructor = ImageCueConfig;
 ImageCueConfig.prototype.type = 'image';
-ImageCueConfig.prototype.extendedProperties = ['opacity','width','height','positionMy','positionAt','style','allowOverlap'];
+ImageCueConfig.prototype.extendedProperties = ['opacity','delay','width','height','positionMy','positionAt','style','allowOverlap'];
 function ImageCueConfig()
 {
   CueConfig.prototype.constructor.apply(this);  
   this.opacity = null;
+  this.delay = null;
   this.width = null;
   this.height = null;
   this.positionMy = null;
@@ -116,11 +118,12 @@ function ImageCueConfig()
 HtmlCueConfig.prototype = new CueConfig();
 HtmlCueConfig.prototype.constructor = ImageCueConfig;
 HtmlCueConfig.prototype.type = 'html';
-HtmlCueConfig.prototype.extendedProperties = ['opacity','width','height','positionMy','positionAt','style','allowOverlap'];
+HtmlCueConfig.prototype.extendedProperties = ['opacity','delay','width','height','positionMy','positionAt','style','allowOverlap'];
 function HtmlCueConfig()
 {
   CueConfig.prototype.constructor.apply(this);  
   this.opacity = null;
+  this.delay = null;
   this.width = null;
   this.height = null;
   this.positionMy = null;
