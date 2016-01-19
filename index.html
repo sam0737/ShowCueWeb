@@ -114,10 +114,13 @@
                               <button type="button" class="btn btn-default btn-lg" data-ng-click="stop()" tooltip="Esc"><span class="glyphicon glyphicon-stop"></span> Stop</button>
                             </div>
                             <button type="button" class="btn btn-default btn-sm" data-ng-click="reapplyChannels()">Reload Screen</button>
-                            <h2 id="standby-cue"><span class="cue-tag">Next</span> {{ 
-                              !cueEngine.cues[cueEngine.current] || (cueEngine.cues[cueEngine.current].goMode != 0 && cueEngine.running) ? '' :
-                              (cueEngine.cues[cueEngine.current + (cueEngine.running ? 1 : 0)].description  || '')
-                              }}</h2>
+                            <h2 id="standby-cue">
+                              <span data-ng-show="cueEngine.cues[cueEngine.current]">
+                                <span class="cue-tag" data-ng-hide="cueEngine.cues[cueEngine.current].goMode != 0 && cueEngine.running">Standby</span>
+                                <span class="cue-tag" data-ng-show="cueEngine.cues[cueEngine.current].goMode != 0 && cueEngine.running">Auto Next</span>
+                                {{ (cueEngine.cues[cueEngine.current + (cueEngine.running ? 1 : 0)].description || '') }}
+                              </span>
+                            </h2>
                           </td>
                         </tr>
                       </tbody>
