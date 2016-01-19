@@ -67,7 +67,8 @@ RawScreen.prototype.load = function load(unloadCallback)
       options += ',width=' + raw.screen.screenWidth;
 
     this.window = window.open('screen.html', '_blank', options);
-    this.window.onload = function() { defLoaded.resolve(); };
+    if (this.window) // If pop-up is blocked, window is undefined.
+      this.window.onload = function() { defLoaded.resolve(); };
     if (unloadCallback)
       this.window.onbeforeunload = function() { t.window = null; unloadCallback(); };
   } else {
