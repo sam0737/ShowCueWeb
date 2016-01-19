@@ -1,0 +1,9 @@
+<div class="modal-header"> 
+  <h3 class="modal-title">Select config file to use</h3> 
+</div> 
+<div class="modal-body">
+  <div>    
+    <span data-ng-repeat="i in allConfigs"><button type="button" class="btn btn-default" data-ng-click="loadConfig(i)">{{ i.name }}</button> </span>
+    <span><button type="button" class="btn btn-primary" data-ng-click="loadDefaultConfig()">Auto-saved</button> </span>
+  </div>
+</div> 

@@ -108,13 +108,13 @@
                         <tr>
                           <td class="cue-handle"></td>
                           <td id="master-cell">
-                            <h1 id="running-cue">{{ cueEngine.running ? cueEngine.cues[cueEngine.current].description : '' || '' }}</h1>
+                            <h1 id="running-cue"><span class="cue-tag">Live</span> {{ cueEngine.running ? cueEngine.cues[cueEngine.current].description : '' || '' }}</h1>
                             <div class="btn-group" role="group">
                               <button type="button" class="btn btn-success btn-lg" data-ng-click="go()" tooltip="Space" data-ng-class="{'active': cueEngine.running}"><span class="glyphicon glyphicon-play"></span> Go</button>
                               <button type="button" class="btn btn-default btn-lg" data-ng-click="stop()" tooltip="Esc"><span class="glyphicon glyphicon-stop"></span> Stop</button>
                             </div>
                             <button type="button" class="btn btn-default btn-sm" data-ng-click="reapplyChannels()">Reload Screen</button>
-                            <h2 id="standby-cue">{{ 
+                            <h2 id="standby-cue"><span class="cue-tag">Next</span> {{ 
                               !cueEngine.cues[cueEngine.current] || (cueEngine.cues[cueEngine.current].goMode != 0 && cueEngine.running) ? '' :
                               (cueEngine.cues[cueEngine.current + (cueEngine.running ? 1 : 0)].description  || '')
                               }}</h2>

@@ -227,7 +227,8 @@ Library.prototype.populateWorkspace = function(entry)
   };
   readEntries(entry.createReader());
 
-  return def.promise.then(function (resources) { 
+  return def.promise.then(function (resources) {     
+    library.rawResources.length = 0;
     library.rawResources.push.apply(library.rawResources, resources);
   });
 }
@@ -267,6 +268,11 @@ Library.prototype.findResourceByName = function (name)
   return StageCue.arrayFind.call(this.rawResources, function (r) { return r.name == name; });
 };
 
+Library.prototype.findAllConfigs = function (name)
+{
+  return this.rawResources.filter(function (r) { return /\.(?:txt|js)$/.test(r.name); });
+};
+
 Library.prototype.getFileType = function (filename)
 {
   if (/\.(?:ogv|mp4|avi|webm|wbm|3gp)$/.test(filename)) 
@@ -277,7 +283,7 @@ Library.prototype.getFileType = function (filename)
     return ImageItem;
   if (/\.(?:mp3|m4a|ogg|wav)$/.test(filename)) 
     return AudioItem;
-  if (/\.(?:js)$/.test(filename)) 
+  if (/\.(?:txt|js)$/.test(filename)) 
     return BlobItem;
   return null;
 }

@@ -52,25 +52,43 @@ function ($q, $scope, $timeout, userConfig, library, cueEngine, $modal) {
   $scope.cueEngine = cueEngine;
   $scope.stageReady = false;
 
+  var loadConfigModal;
+
   $scope.setStageReady = function(workspaceEntry) { 
-    $timeout(function() { $scope.stageReady = true; });
     $timeout(function() {
       $q
         .when(library.populateWorkspace(workspaceEntry))
         .then(function() { 
-          var res = library.findResourceByName('config.js');
-          var configData = null;
-          if (res) {
-            console.debug("config.js found in workspace and will be used instead");
-            res.readAsText()
-              .then(function (result) { configData = result; })
-              .catch(function () { console.debug("Failed to read config.js"); })
-              .finally(function() { userConfig.thaw(configData); });
-          } else {
-            userConfig.thaw(); 
+          $scope.allConfigs = library.findAllConfigs();
+          if ($scope.allConfigs.length)
+          {
+            loadConfigModal = $modal.open({
+              templateUrl: 'partials/load-config-modal.html',
+              scope: $scope
+            });
+          } else
+          {
+            $scope.loadDefaultConfig();
           }
         })
     });
+
+    $scope.loadDefaultConfig = function() {
+      if (loadConfigModal) loadConfigModal.close();
+      userConfig.thaw(); 
+      $timeout(function() { $scope.stageReady = true; });
+    }
+
+    $scope.loadConfig = function(resource) {
+      if (loadConfigModal) loadConfigModal.close();
+      resource.readAsText()
+        .then(function (result) {
+          configData = result; 
+          userConfig.thaw(configData); 
+          $scope.stageReady = true; 
+        })
+        .catch(function () { console.debug("Failed to read config.js"); })
+    };
   };
 
   $scope.urlDrop = function(results) {
