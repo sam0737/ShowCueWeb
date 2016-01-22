@@ -68,9 +68,11 @@ RawScreen.prototype.load = function load(unloadCallback)
 
     this.window = window.open('screen.html', '_blank', options);
     if (this.window) // If pop-up is blocked, window is undefined.
+    {
       this.window.onload = function() { defLoaded.resolve(); };
-    if (unloadCallback)
-      this.window.onbeforeunload = function() { t.window = null; unloadCallback(); };
+      if (unloadCallback)
+        this.window.onbeforeunload = function() { t.window = null; unloadCallback(); };
+    }
   } else {
     defLoaded.resolve();
   }
