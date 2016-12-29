@@ -323,7 +323,6 @@ angular.module("stageCue").service("sc.renderer", ['$q', function (q) {
       if (item instanceof VideoItem)
       {
         node[0].src = item.blobUrl;
-        node.one('ended', removal);
       } else if (item instanceof ImageItem)
       {
         node[0].src = item.blobUrl + '#' + seq;
@@ -358,14 +357,20 @@ angular.module("stageCue").service("sc.renderer", ['$q', function (q) {
         clip.source.connect(clip.gain);
         clip.gain.connect(target.masterGain);
         clip.gain.gain.value = config.gain != null ? config.gain : 1;
-        node[0].play();
+        defDelay.promise.then(function() {
+          node[0].play(); 
+          if (config.doNotRemoveAtTheEnd) {
+            node.one('ended', function() { def.resolve(); });
+          } else {
+            node.one('ended', function() {
+              clip.styles.forEach(function(i) { i.remove(); });
+              node.remove();
+              target.removeClip(clip);
+              def.resolve();
+            });
+          }
+        });
       }
-      removal = function() {
-        clip.styles.forEach(function(i) { i.remove(); });
-        node.remove();
-        target.removeClip(clip);
-        def.resolve();
-      };
       defStop.promise.then(removal);
 
       screen.getWrapperSelector().append(node);
