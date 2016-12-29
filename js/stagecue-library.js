@@ -107,8 +107,8 @@ BlobItem.prototype.loadFromResource = function loadFromResource(resource) {
 
   return $q.when(resource.readAsBlob())
     .then(function (blob) { 
-      item.blob = blob; 
-      item.blobUrl = URL.createObjectURL(item.blob); 
+      item.$blob = blob; 
+      item.blobUrl = URL.createObjectURL(item.$blob); 
     })
     .catch(function (result) { console.log('Failed to load file', resource.name, result); });
 };
