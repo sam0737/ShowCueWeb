@@ -84,6 +84,7 @@ RawScreen.prototype.load = function load(unloadCallback)
     raw.getWrapperSelector()
       .css({width: raw.screen.width || 300, height: raw.screen.height || 300, transform: raw.screen.transform || ''})
       .position({my: raw.screen.positionMy || 'center', at: raw.screen.positionAt || 'center', collision: 'none', of: body});
+    raw.window.document.title = raw.screen.name;
     def.resolve();
   });
   return def.promise;
