@@ -337,7 +337,7 @@ angular.module("stageCue").service("sc.renderer", ['$q', function (q) {
         width: config.width || item.width || 100, 
         height: config.height || item.height || 100,
         position: 'absolute', 
-        opacity: config.opacity || undefined,
+        opacity: (config.opacity == null || config.opacity === "" ? undefined : config.opacity),
         zIndex: channel.index + 10
       });
       node.position({my: config.positionMy || 'center', at: config.positionAt || 'center', collision: 'none', of: screen.getWrapperSelector()});
