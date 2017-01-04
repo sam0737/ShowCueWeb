@@ -155,11 +155,7 @@ angular.module("stageCue").service("sc.renderer", ['$q', function (q) {
         }
       }
 
-      if (config.waitActive && currentActive) {
-        $q.when(currentActive.endPromise).then(function() { def.resolve(); });
-      } else {
-        def.resolve();
-      }
+      def.resolve();
     }
 
     var defDelay = $q.defer();
@@ -221,6 +217,10 @@ angular.module("stageCue").service("sc.renderer", ['$q', function (q) {
           currentActive.visualNode.one('animationend', ends);
           currentActive.visualNode.one('webkitAnimationEnd', ends);
         }
+      }
+      if (config.waitActive && currentActive) {
+        endNow = false;
+        $q.when(currentActive.endPromise).then(function() { ends(); });
       }
 
       if (endNow)
@@ -320,6 +320,12 @@ angular.module("stageCue").service("sc.renderer", ['$q', function (q) {
 
     target.addClip(clip);
     defDelay.promise.then(function() {
+      var removal = function() {
+        clip.styles.forEach(function(i) { i.remove(); });
+        node.remove();
+        target.removeClip(clip);
+        def.resolve();
+      };
       if (item instanceof VideoItem)
       {
         node[0].src = item.blobUrl;
@@ -362,12 +368,7 @@ angular.module("stageCue").service("sc.renderer", ['$q', function (q) {
           if (config.doNotRemoveAtTheEnd) {
             node.one('ended', function() { def.resolve(); });
           } else {
-            node.one('ended', function() {
-              clip.styles.forEach(function(i) { i.remove(); });
-              node.remove();
-              target.removeClip(clip);
-              def.resolve();
-            });
+            node.one('ended', removal);
           }
         });
       }

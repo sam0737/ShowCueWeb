@@ -83,7 +83,7 @@ function AudioControlCueConfig()
 VideoCueConfig.prototype = new CueConfig();
 VideoCueConfig.prototype.constructor = VideoCueConfig;
 VideoCueConfig.prototype.type = 'video';
-VideoCueConfig.prototype.extendedProperties = ['gain','opacity','delay','width','height','positionMy','positionAt','style','allowOverlap'];
+VideoCueConfig.prototype.extendedProperties = ['gain','opacity','delay','width','height','positionMy','positionAt','style','allowOverlap','doNotRemoveAtTheEnd'];
 function VideoCueConfig()
 {
   CueConfig.prototype.constructor.apply(this);  
@@ -96,6 +96,7 @@ function VideoCueConfig()
   this.positionAt = null;
   this.style = null;
   this.allowOverlap = false;
+  this.doNotRemoveAtTheEnd = false;
 }
 
 ImageCueConfig.prototype = new CueConfig();
