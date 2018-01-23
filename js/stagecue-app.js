@@ -27,8 +27,8 @@ StageCue.arrayFind = function arrayFind(callback, thisArg)
 
 StageCue.raiseJsonDownloadPrompt = function raiseJsonDownloadPrompt(filename, text)
 {
-  var uriContent = "data:application/json;charset=utf-8;filename="+filename+"," + encodeURIComponent(text);
-  window.open(uriContent);
+  var w = window.open();
+  w.document.body.innerText = text;
 }
 
 stage.run(function(editableThemes, editableOptions) {
