@@ -179,6 +179,8 @@ function ($scope, $q, cueEngine, $document, $modal, $modalStack) {
             $scope.moveCueUp(cueEngine.current);
           else if (e.ctrlKey && !e.shiftKey && !e.altKey && !e.metaKey)
             $scope.setCurrentAt(cueEngine.current - 1);
+          else if (!e.ctrlKey && !e.shiftKey && !e.altKey && !e.metaKey)
+            if (cueEngine.running) { $scope.stop(); } else { $scope.setCurrentAt(cueEngine.current - 1); }
           else return false;
           break;
         case 40: // Down
@@ -186,6 +188,8 @@ function ($scope, $q, cueEngine, $document, $modal, $modalStack) {
             $scope.moveCueDown(cueEngine.current);
           else if (e.ctrlKey && !e.shiftKey && !e.altKey && !e.metaKey)
             $scope.setCurrentAt(cueEngine.current + 1);
+          else if (!e.ctrlKey && !e.shiftKey && !e.altKey && !e.metaKey)
+            $scope.go();
           else return false;
           break;
         case 46: // Delete
