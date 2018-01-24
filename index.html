@@ -107,7 +107,7 @@
                       <tbody>
                         <tr>
                           <td class="cue-handle"></td>
-                          <td id="master-cell">
+                          <td id="master-cell" data-ng-class="{'show-running': cueEngine.running}">
                             <h1 id="running-cue"><span class="cue-tag">Live</span> {{ cueEngine.running ? cueEngine.cues[cueEngine.current].description : '' || '' }}</h1>
                             <div class="btn-group" role="group">
                               <button type="button" class="btn btn-success btn-lg" data-ng-click="go()" tooltip="Space" data-ng-class="{'active': cueEngine.running}"><span class="glyphicon glyphicon-play"></span> Go</button>

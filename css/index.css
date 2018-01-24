@@ -3,6 +3,7 @@ html, body {
 }
 .navbar { margin-bottom: 0; }
 .navbar.show-running { background: rgb(119, 179, 0); }
+.show-running { background: rgb(60, 80, 0); }
 
 ul.menu { position: absolute; border: 1px solid red; z-index: 100000; }
 
