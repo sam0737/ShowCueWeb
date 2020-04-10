@@ -389,6 +389,7 @@ angular.module("stageCue").service("sc.renderer", ['$q', function (q) {
   this.addChannel = function addChannel(channel)
   {
     if (!(channel instanceof ShowChannel)) return;
+    a.resume();
 
     var t = renderTargets[channel.id] = 
       renderTargets[channel.id] || new RenderTarget(channel);
